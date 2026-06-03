@@ -56,3 +56,18 @@ input[type=number]::-webkit-outer-spin-button {
 input[type=number] {
   -moz-appearance: textfield;
 }
+
+/* ── Rich text editor (JournalModule) ─────────────────────────── */
+.rich-editor:empty:before {
+  content: attr(data-placeholder);
+  color: #3a3a3a;
+  pointer-events: none;
+}
+.rich-editor h2 { font-size: 1.1rem; font-weight: 600; margin: 0.5rem 0 0.25rem; }
+.rich-editor ul, .rich-editor ol { padding-left: 1.4rem; }
+.rich-editor li { margin: 0.15rem 0; }
+.rich-editor b, .rich-editor strong { font-weight: 600; }
+.rich-editor u { text-decoration: underline; }
+.rich-editor em, .rich-editor i { font-style: italic; }
+.cl-item { display: flex; align-items: baseline; gap: 0.35rem; cursor: text; }
+.cl-item[data-done="true"] { opacity: 0.5; text-decoration: line-through; }
