@@ -494,6 +494,33 @@ export default function FocusModule() {
           </Ring>
         </div>
 
+        {/* Phase badges */}
+        <div className="flex flex-wrap justify-center gap-2">
+          {[
+            { key: 'focus',      label: 'Работа',       min: settings.workMin },
+            { key: 'break',      label: 'Отдых',        min: settings.breakMin },
+            { key: 'long_break', label: 'Большой отдых', min: settings.longBreakMin },
+          ].map(({ key, label, min }) => {
+            const active = phase === key
+            const c = PHASE_META[key].color
+            return (
+              <span
+                key={key}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all"
+                style={active
+                  ? { background: c + '22', color: c, border: `1px solid ${c}55` }
+                  : { background: 'transparent', color: '#444', border: '1px solid #222' }
+                }
+              >
+                {label}
+                <span className="font-semibold" style={active ? { color: c } : { color: '#555' }}>
+                  {min}&nbsp;мин
+                </span>
+              </span>
+            )
+          })}
+        </div>
+
         {/* Controls */}
         <div className="flex items-center justify-center gap-3">
           <button onClick={handleReset} title="Сброс"
