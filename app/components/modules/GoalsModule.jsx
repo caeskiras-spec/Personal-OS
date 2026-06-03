@@ -28,9 +28,9 @@ const STATUS_TABS  = [
   { key: 'archived',  label: 'Архив' },
 ]
 const PTYPES = [
-  { key: 'percent',    label: '% вручную' },
-  { key: 'numeric',    label: 'Числовой' },
-  { key: 'milestones', label: 'По вехам' },
+  { key: 'milestones', label: 'По вехам',              desc: 'Прогресс = выполненные вехи ÷ всего вех. Добавьте чеклист шагов.' },
+  { key: 'numeric',    label: 'Число (текущее / цель)', desc: 'Прогресс = текущее значение ÷ цель. Например, 12 из 50 книг.' },
+  { key: 'percent',    label: 'Вручную (%)',            desc: 'Ползунок 0–100 — вы сами двигаете прогресс.' },
 ]
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -298,7 +298,7 @@ function GoalForm({ initial, categories, tasks, projects, habits, onSave, onCanc
   const [title,      setTitle]      = useState(initial?.title       || '')
   const [desc,       setDesc]       = useState(initial?.description || '')
   const [catId,      setCatId]      = useState(initial?.category_id || null)
-  const [ptype,      setPtype]      = useState(initial?.progress_type || 'percent')
+  const [ptype,      setPtype]      = useState(initial?.progress_type || 'milestones')
   const [progress,   setProgress]   = useState(initial?.progress    ?? 0)
   const [currVal,    setCurrVal]    = useState(initial?.current_value ?? 0)
   const [targVal,    setTargVal]    = useState(initial?.target_value  ?? '')
@@ -357,19 +357,30 @@ function GoalForm({ initial, categories, tasks, projects, habits, onSave, onCanc
       {/* Progress type */}
       <div>
         <p className="text-[10px] text-[#444] mb-1.5">Тип прогресса</p>
-        <div className="flex gap-1 bg-[#111] rounded-lg p-0.5">
-          {PTYPES.map(pt => (
-            <button key={pt.key} onClick={() => setPtype(pt.key)}
-              className={`flex-1 py-1.5 rounded-md text-[10px] font-medium transition-all ${ptype === pt.key ? 'bg-[#2a2a2a] text-[#f0f0f0]' : 'text-[#555] hover:text-[#f0f0f0]'}`}
-            >{pt.label}</button>
-          ))}
+        <div className="flex flex-col gap-1.5">
+          {PTYPES.map(pt => {
+            const active = ptype === pt.key
+            return (
+              <button key={pt.key} type="button" onClick={() => setPtype(pt.key)}
+                className={`w-full text-left px-3 py-2.5 rounded-xl border transition-all ${
+                  active ? 'bg-[#6c63ff]/10 border-[#6c63ff]/40 text-[#f0f0f0]' : 'bg-[#111] border-[#222] text-[#666] hover:border-[#333] hover:text-[#aaa]'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full border-2 shrink-0 transition-all ${active ? 'border-[#6c63ff] bg-[#6c63ff]' : 'border-[#333]'}`} />
+                  <span className="text-xs font-medium">{pt.label}</span>
+                </div>
+                {active && <p className="text-[10px] text-[#888] mt-1 ml-5">{pt.desc}</p>}
+              </button>
+            )
+          })}
         </div>
       </div>
       {/* Progress controls */}
       {ptype === 'percent' && (
         <div>
           <div className="flex items-center justify-between mb-1">
-            <p className="text-[10px] text-[#444]">Прогресс</p>
+            <p className="text-[10px] text-[#444]">Начальное значение</p>
             <span className="text-xs font-bold text-[#6c63ff]">{progress}%</span>
           </div>
           <input type="range" min={0} max={100} value={progress} onChange={e => setProgress(+e.target.value)}
@@ -379,14 +390,14 @@ function GoalForm({ initial, categories, tasks, projects, habits, onSave, onCanc
       {ptype === 'numeric' && (
         <div className="flex gap-2">
           <div className="flex-1">
+            <p className="text-[10px] text-[#444] mb-1">Цель <span className="text-[#ef4444]">*</span></p>
+            <input type="number" value={targVal} onChange={e => setTargVal(e.target.value)} placeholder="50"
+              className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-sm text-[#f0f0f0] outline-none focus:border-[#6c63ff]/40 placeholder:text-[#333]" />
+          </div>
+          <div className="flex-1">
             <p className="text-[10px] text-[#444] mb-1">Текущее</p>
             <input type="number" value={currVal} onChange={e => setCurrVal(e.target.value)}
               className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-sm text-[#f0f0f0] outline-none focus:border-[#6c63ff]/40" />
-          </div>
-          <div className="flex-1">
-            <p className="text-[10px] text-[#444] mb-1">Цель</p>
-            <input type="number" value={targVal} onChange={e => setTargVal(e.target.value)} placeholder="50"
-              className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-sm text-[#f0f0f0] outline-none focus:border-[#6c63ff]/40 placeholder:text-[#333]" />
           </div>
           <div className="w-20">
             <p className="text-[10px] text-[#444] mb-1">Ед.</p>
@@ -396,7 +407,10 @@ function GoalForm({ initial, categories, tasks, projects, habits, onSave, onCanc
         </div>
       )}
       {ptype === 'milestones' && (
-        <p className="text-[10px] text-[#444]">Прогресс рассчитывается по выполненным вехам после создания цели.</p>
+        <div className="bg-[#6c63ff]/8 border border-[#6c63ff]/20 rounded-xl px-3 py-2.5">
+          <p className="text-[10px] text-[#8b85ff] font-medium mb-0.5">После создания цели</p>
+          <p className="text-[10px] text-[#666]">Откройте карточку цели и добавьте первую веху. Прогресс пойдёт автоматически.</p>
+        </div>
       )}
       {/* Icon + color */}
       <div>
@@ -481,9 +495,11 @@ function GoalForm({ initial, categories, tasks, projects, habits, onSave, onCanc
 // ─── DetailPanel ───────────────────────────────────────────────────────────────
 
 function DetailPanel({ goal, milestones, categories, tasks, projects, habits, userId, onClose, onUpdate, onDelete, onMilestonesChange }) {
-  const [editing,   setEditing]   = useState(false)
-  const [saving,    setSaving]    = useState(false)
-  const [confirmDel, setConfirmDel] = useState(false)
+  const [editing,      setEditing]      = useState(false)
+  const [saving,       setSaving]       = useState(false)
+  const [confirmDel,   setConfirmDel]   = useState(false)
+  const [quickVal,     setQuickVal]     = useState('')
+  const [savingQuick,  setSavingQuick]  = useState(false)
 
   const pct = computeProgress(goal, milestones)
   const dl  = deadlineStatus(goal.deadline)
@@ -494,6 +510,15 @@ function DetailPanel({ goal, milestones, categories, tasks, projects, habits, us
     await onUpdate(goal.id, fields)
     setSaving(false)
     setEditing(false)
+  }
+
+  const saveQuickVal = async () => {
+    const v = parseFloat(quickVal)
+    if (isNaN(v)) return
+    setSavingQuick(true)
+    await onUpdate(goal.id, { current_value: v })
+    setSavingQuick(false)
+    setQuickVal('')
   }
 
   return (
@@ -525,26 +550,78 @@ function DetailPanel({ goal, milestones, categories, tasks, projects, habits, us
         ) : (
           <>
             {/* Progress card */}
-            <div className="bg-[#1a1a1a] border border-[#222] rounded-xl p-4 flex items-center gap-4">
-              <Ring pct={pct} color={goal.color} size={72} sw={7}>
-                <span className="text-sm font-bold" style={{ color: goal.color }}>{pct}%</span>
-              </Ring>
-              <div className="flex-1 min-w-0">
-                {cat && <p className="text-[10px] mb-0.5" style={{ color: cat.color }}>{cat.emoji} {cat.name}</p>}
-                {goal.progress_type === 'numeric' && goal.target_value && (
-                  <p className="text-sm font-semibold text-[#f0f0f0]">{goal.current_value} / {goal.target_value}{goal.unit ? ' '+goal.unit : ''}</p>
-                )}
-                {goal.progress_type === 'milestones' && (() => {
-                  const ms = milestones.filter(m => m.goal_id === goal.id)
-                  return <p className="text-sm font-semibold text-[#f0f0f0]">{ms.filter(m=>m.done).length} / {ms.length} вех</p>
-                })()}
-                {goal.progress_type === 'percent' && (
-                  <p className="text-sm font-semibold text-[#f0f0f0]">{pct}% выполнено</p>
-                )}
-                {dl && <p className="text-[10px] mt-1" style={{ color: dl.color }}>{dl.label}</p>}
-                {goal.description && <p className="text-xs text-[#555] mt-1 line-clamp-2">{goal.description}</p>}
-              </div>
-            </div>
+            {(() => {
+              const ms = milestones.filter(m => m.goal_id === goal.id)
+              const msD = ms.filter(m => m.done).length
+              const noTarget = goal.progress_type === 'numeric' && !goal.target_value
+              const noMilestones = goal.progress_type === 'milestones' && ms.length === 0
+              return (
+                <div className="bg-[#1a1a1a] border border-[#222] rounded-xl p-4">
+                  <div className="flex items-center gap-4">
+                    <Ring pct={pct} color={goal.color} size={72} sw={7}>
+                      <span className="text-sm font-bold" style={{ color: goal.color }}>{pct}%</span>
+                    </Ring>
+                    <div className="flex-1 min-w-0">
+                      {cat && <p className="text-[10px] mb-0.5" style={{ color: cat.color }}>{cat.emoji} {cat.name}</p>}
+                      {goal.progress_type === 'numeric' && goal.target_value ? (
+                        <p className="text-sm font-semibold text-[#f0f0f0]">{goal.current_value} / {goal.target_value}{goal.unit ? ' '+goal.unit : ''}</p>
+                      ) : goal.progress_type === 'milestones' ? (
+                        ms.length > 0
+                          ? <p className="text-sm font-semibold text-[#f0f0f0]">{msD} из {ms.length} вех</p>
+                          : <p className="text-sm font-semibold text-[#555]">Нет вех</p>
+                      ) : (
+                        <p className="text-sm font-semibold text-[#f0f0f0]">{pct}% выполнено</p>
+                      )}
+                      {dl && <p className="text-[10px] mt-1" style={{ color: dl.color }}>{dl.label}</p>}
+                      {goal.description && <p className="text-xs text-[#555] mt-1 line-clamp-2">{goal.description}</p>}
+                    </div>
+                  </div>
+
+                  {/* Context hint */}
+                  {noMilestones && (
+                    <div className="mt-3 pt-3 border-t border-[#252525]">
+                      <p className="text-[11px] text-[#8b85ff]">Добавьте вехи ниже — прогресс пойдёт автоматически</p>
+                    </div>
+                  )}
+                  {!noMilestones && goal.progress_type === 'milestones' && ms.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-[#252525]">
+                      <p className="text-[11px] text-[#555]">Отмечайте вехи ниже, чтобы двигать прогресс</p>
+                    </div>
+                  )}
+                  {goal.progress_type === 'percent' && (
+                    <div className="mt-3 pt-3 border-t border-[#252525]">
+                      <p className="text-[11px] text-[#555]">Измените прогресс через редактирование цели (карандаш выше)</p>
+                    </div>
+                  )}
+                  {noTarget && (
+                    <div className="mt-3 pt-3 border-t border-[#252525]">
+                      <p className="text-[11px] text-[#f59e0b]">Укажите целевое значение в редакторе — иначе прогресс не считается</p>
+                    </div>
+                  )}
+                  {!noTarget && goal.progress_type === 'numeric' && goal.target_value && (
+                    <div className="mt-3 pt-3 border-t border-[#252525]">
+                      <p className="text-[10px] text-[#444] mb-1.5">Обновить текущее значение</p>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          value={quickVal}
+                          onChange={e => setQuickVal(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') saveQuickVal() }}
+                          placeholder={String(goal.current_value ?? 0)}
+                          className="flex-1 bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-sm text-[#f0f0f0] outline-none focus:border-[#6c63ff]/40 placeholder:text-[#333]"
+                        />
+                        {goal.unit && <span className="self-center text-xs text-[#555] shrink-0">{goal.unit}</span>}
+                        <button
+                          onClick={saveQuickVal}
+                          disabled={!quickVal.trim() || savingQuick}
+                          className="px-3 py-1.5 bg-[#6c63ff] hover:bg-[#8b85ff] text-white text-xs rounded-lg disabled:opacity-40 transition-colors shrink-0"
+                        >{savingQuick ? '...' : 'Сохранить'}</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
 
             {/* Milestones */}
             {goal.progress_type === 'milestones' && (
