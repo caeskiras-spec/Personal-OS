@@ -6,6 +6,7 @@ import { useAuth } from '../../lib/auth'
 import { useOS } from '../../lib/store'
 import { getModuleById } from '../../lib/modules'
 import { MODULE_ICONS } from '../../lib/moduleIcons'
+import ProfilePanel from './ProfilePanel'
 
 const NAV_ITEMS = [
   { path: '/home',      icon: '⌂', label: 'Главная'   },
@@ -19,6 +20,7 @@ export default function OSLayout({ children, activeRoute }) {
   const pathname = usePathname()
   const { session, loading } = useAuth()
   const { activeModules, reorderModules, userName } = useOS()
+  const [profileOpen, setProfileOpen] = useState(false)
   const currentPath = activeRoute || pathname
 
   // ── drag&drop state ──────────────────────────────────────────────
@@ -168,14 +170,17 @@ export default function OSLayout({ children, activeRoute }) {
 
         {/* User footer */}
         <div className="mt-auto p-3 border-t border-border">
-          <div className="flex items-center gap-2 px-3 py-2">
-            <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center text-xs text-accent shrink-0">
+          <button
+            onClick={() => setProfileOpen(true)}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors text-left group"
+          >
+            <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center text-xs text-accent shrink-0 group-hover:bg-accent/30 transition-colors">
               {(userName || session?.user?.email || 'У')[0].toUpperCase()}
             </div>
             <span className="text-subtle text-xs truncate flex-1">
               {userName || session?.user?.email || 'Пользователь'}
             </span>
-          </div>
+          </button>
         </div>
       </aside>
 
@@ -183,6 +188,9 @@ export default function OSLayout({ children, activeRoute }) {
       <main className="flex-1 overflow-y-auto">
         {children}
       </main>
+
+      {/* ── Profile panel ── */}
+      {profileOpen && <ProfilePanel onClose={() => setProfileOpen(false)} />}
     </div>
   )
 }

@@ -34,7 +34,7 @@
 - focus_sessions (date, type focus/break/long_break, duration_minutes, task_id, project_id, completed)
 - goals (progress_type percent/numeric/milestones, progress, current_value, target_value, unit, status active/completed/archived, deadline, color, icon, linked_project_ids jsonb, linked_task_ids jsonb, linked_habit_ids jsonb)
 - goal_milestones (goal_id→goals, title, done, position), goal_categories
-- user_profiles (calorie_goal, protein_goal, carbs_goal, fat_goal, sleep_goal_minutes, focus_goal_minutes, focus_work_minutes, focus_break_minutes, focus_long_break_minutes, focus_cycles_before_long, workout_weekly_goal, onboarding_completed)
+- user_profiles (calorie_goal, protein_goal, carbs_goal, fat_goal, sleep_goal_minutes, focus_goal_minutes, focus_work_minutes, focus_break_minutes, focus_long_break_minutes, focus_cycles_before_long, workout_weekly_goal, onboarding_completed, display_name, gender [male|female|other], birth_date [text YYYY-MM-DD], height_cm, weight_kg, activity_level [low|medium|high]) — миграция 0017
 - user_modules (module_id text, is_active, position int — порядок модулей в сайдбаре)
 - auth.users (Supabase Auth)
 
@@ -52,6 +52,7 @@
 - RLS-safe reorder: individual UPDATE на каждую строку (не upsert), Promise.all.
 - Toast: fixed top-4 right-4 z-50, AlertCircle, auto-dismiss 3s.
 - Skeleton: [1,2,3].map(i => <div key={i} className="h-20 bg-[#1d1d1d] border border-[#333] rounded-xl animate-pulse"/>).
+- Профиль пользователя: клик на user-footer сайдбара → ProfilePanel (fixed bottom-left drawer). Поля: display_name, gender, birth_date + авто-возраст, height_cm, weight_kg, activity_level. Сохраняется через profileRepo.upsert. Задел для авто-нормы калорий (Питание).
 - Страница /modules: адаптивная сетка карточек (grid-cols-1 sm:2 lg:3 xl:4). Два раздела — «Мои модули» (активные, draggable) + каталог по категориям. Drag-and-drop через dragHappened ref (сброс через setTimeout 200ms) — не ломает клики после дропа. Карточки одинаковой высоты через min-h + flex flex-col + mt-auto для кнопок.
 
 ## Заглушки «Функция в разработке» (каркас заложен, без реальной логики)
