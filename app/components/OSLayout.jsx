@@ -53,7 +53,11 @@ export default function OSLayout({ children, activeRoute }) {
   }
 
   const handleDragEnd = () => resetDrag()
-  const resetDrag     = () => { setDragId(null); setOverId(null) }
+  const resetDrag     = () => {
+    setDragId(null)
+    setOverId(null)
+    setTimeout(() => { dragHappened.current = false }, 150)
+  }
   // ────────────────────────────────────────────────────────────────
 
   useEffect(() => {
