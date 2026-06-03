@@ -464,17 +464,22 @@ export default function FocusModule() {
           </div>
         </div>
 
-        {/* Cycle dots */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-[#444]">Цикл {Math.floor(cycleCount / settings.cyclesBeforeLong) + 1}</span>
-          <div className="flex gap-1.5">
-            {Array.from({ length: settings.cyclesBeforeLong }).map((_, i) => (
-              <div key={i}
-                className="w-2 h-2 rounded-full transition-all"
-                style={{ background: i < (cycleCount % settings.cyclesBeforeLong) ? meta.color : '#2a2a2a' }}
-              />
-            ))}
+        {/* Cycle dots + callout */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-[#444]">Цикл {Math.floor(cycleCount / settings.cyclesBeforeLong) + 1}</span>
+            <div className="flex gap-1.5">
+              {Array.from({ length: settings.cyclesBeforeLong }).map((_, i) => (
+                <div key={i}
+                  className="w-2 h-2 rounded-full transition-all"
+                  style={{ background: i < (cycleCount % settings.cyclesBeforeLong) ? meta.color : '#2a2a2a' }}
+                />
+              ))}
+            </div>
           </div>
+          <p className="text-[11px] text-[#3a3a3a] leading-relaxed max-w-sm">
+            Один цикл: Работа&nbsp;{settings.workMin}&nbsp;мин → Отдых&nbsp;{settings.breakMin}&nbsp;мин, повторить&nbsp;{settings.cyclesBeforeLong}&nbsp;раза → большой отдых&nbsp;{settings.longBreakMin}&nbsp;мин. Затем цикл начинается заново.
+          </p>
         </div>
 
         {/* Ring timer */}
