@@ -1,19 +1,181 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useOS } from '../../lib/store'
 import { ALL_MODULES, MODULE_CATEGORIES, getModuleById } from '../../lib/modules'
 import { MODULE_ICONS } from '../../lib/moduleIcons'
 import { useRouter } from 'next/navigation'
-import { GripVertical } from 'lucide-react'
+import { GripVertical, Plus, ExternalLink, EyeOff, LayoutGrid } from 'lucide-react'
+
+// ─── ModuleIcon ────────────────────────────────────────────────────────────────
+
+function ModuleIcon({ modId, color, size = 'md' }) {
+  const mi = MODULE_ICONS[modId]
+  const mod = getModuleById(modId)
+  const dim = size === 'lg' ? 'w-12 h-12' : 'w-10 h-10'
+  const iconDim = size === 'lg' ? 'w-6 h-6' : 'w-5 h-5'
+  return (
+    <div
+      className={`${dim} rounded-xl flex items-center justify-center shrink-0`}
+      style={{ backgroundColor: (color || mod?.color || '#6c63ff') + '20' }}
+    >
+      {mi
+        ? <mi.Icon className={iconDim} style={{ color: mi.color }} />
+        : <span className="text-lg" style={{ color: color || mod?.color }}>{mod?.icon}</span>
+      }
+    </div>
+  )
+}
+
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+
+function GridSkeleton({ count = 6 }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="h-44 bg-[#1d1d1d] border border-[#333] rounded-xl animate-pulse" />
+      ))}
+    </div>
+  )
+}
+
+// ─── ActiveModuleCard (draggable) ──────────────────────────────────────────────
+
+function ActiveModuleCard({ modId, isDragging, isOver, dragHappened,
+  onDragStart, onDragOver, onDrop, onDragEnd, onOpen, onRemove }) {
+  const mod = getModuleById(modId)
+  if (!mod) return null
+
+  return (
+    <div
+      draggable
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
+      className={`
+        relative flex flex-col gap-3 p-4 rounded-xl border transition-all
+        cursor-grab active:cursor-grabbing select-none h-full
+        ${isDragging
+          ? 'opacity-30 scale-[0.97] bg-[#1d1d1d] border-[#2a2a2a]'
+          : isOver
+            ? 'bg-[#1a1a2e] border-[#6c63ff]/50 shadow-[0_0_0_1px_rgba(108,99,255,0.15)]'
+            : 'bg-[#1d1d1d] border-[#333] hover:bg-[#222] hover:border-[#3f3f3f]'
+        }
+      `}
+    >
+      {/* Drag handle */}
+      <div className="absolute top-3 right-3 text-[#333] hover:text-[#555] transition-colors">
+        <GripVertical className="w-4 h-4" />
+      </div>
+
+      {/* Icon */}
+      <ModuleIcon modId={modId} color={mod.color} size="lg" />
+
+      {/* Text */}
+      <div className="flex-1">
+        <p className="text-sm font-semibold text-[#f0f0f0] leading-tight">{mod.name}</p>
+        <p className="text-[11px] text-[#555] mt-1 leading-relaxed line-clamp-2">{mod.description}</p>
+      </div>
+
+      {/* Status + actions */}
+      <div className="flex flex-col gap-2 mt-auto">
+        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#22c55e] w-fit">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e] inline-block" />
+          Подключён
+        </span>
+        <div className="flex gap-1.5">
+          <button
+            onMouseDown={e => e.stopPropagation()}
+            onClick={e => { e.stopPropagation(); if (!dragHappened.current) onOpen() }}
+            className="flex-1 flex items-center justify-center gap-1 text-[11px] text-[#6c63ff] hover:text-[#8b85ff] py-1.5 rounded-lg border border-[#6c63ff]/30 hover:border-[#6c63ff]/60 transition-colors"
+          >
+            <ExternalLink className="w-3 h-3" /> Открыть
+          </button>
+          <button
+            onMouseDown={e => e.stopPropagation()}
+            onClick={e => { e.stopPropagation(); if (!dragHappened.current) onRemove() }}
+            className="flex items-center justify-center gap-1 text-[11px] text-[#555] hover:text-[#ef4444] px-2.5 py-1.5 rounded-lg border border-[#2a2a2a] hover:border-[#ef4444]/30 transition-colors"
+            title="Скрыть"
+          >
+            <EyeOff className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── CatalogModuleCard ─────────────────────────────────────────────────────────
+
+function CatalogModuleCard({ mod, isActive, onAdd, onOpen, onRemove }) {
+  return (
+    <div className={`
+      flex flex-col gap-3 p-4 rounded-xl border transition-all h-full
+      ${isActive
+        ? 'bg-[#1d1d1d] border-[#3a3a3a]'
+        : 'bg-[#161616] border-[#252525] hover:bg-[#1a1a1a] hover:border-[#2e2e2e]'
+      }
+    `}>
+      <ModuleIcon modId={mod.id} color={mod.color} />
+
+      <div className="flex-1">
+        <p className={`text-sm font-semibold leading-tight ${isActive ? 'text-[#f0f0f0]' : 'text-[#888]'}`}>
+          {mod.name}
+        </p>
+        <p className="text-[11px] text-[#444] mt-1 leading-relaxed line-clamp-2">{mod.description}</p>
+      </div>
+
+      <div className="mt-auto">
+        {isActive ? (
+          <div className="flex gap-1.5">
+            <button
+              onClick={onOpen}
+              className="flex-1 text-[11px] text-[#6c63ff] hover:text-[#8b85ff] py-1.5 rounded-lg border border-[#6c63ff]/20 hover:border-[#6c63ff]/50 transition-colors"
+            >
+              Открыть
+            </button>
+            <button
+              onClick={onRemove}
+              className="text-[11px] text-[#555] hover:text-[#ef4444] px-2.5 py-1.5 rounded-lg border border-[#2a2a2a] hover:border-[#ef4444]/30 transition-colors"
+              title="Скрыть"
+            >
+              <EyeOff className="w-3 h-3" />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={onAdd}
+            className="w-full flex items-center justify-center gap-1.5 text-[11px] font-medium text-white bg-[#6c63ff] hover:bg-[#8b85ff] py-1.5 rounded-lg transition-colors"
+          >
+            <Plus className="w-3 h-3" /> Подключить
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── ModuleStore ───────────────────────────────────────────────────────────────
 
 export default function ModuleStore() {
-  const { activeModules, addModule, removeModule, reorderModules } = useOS()
+  const { activeModules, addModule, removeModule, reorderModules, isLoading } = useOS()
   const router = useRouter()
   const [dragId, setDragId] = useState(null)
   const [overId, setOverId] = useState(null)
+  const dragHappened = useRef(false)
+
+  // ── Drag handlers ─────────────────────────────────────────────────────────
+
+  const resetDrag = () => {
+    setDragId(null)
+    setOverId(null)
+    // delay so click-after-drop doesn't fire navigation
+    setTimeout(() => { dragHappened.current = false }, 200)
+  }
 
   const handleDragStart = (e, id) => {
+    dragHappened.current = false
     setDragId(id)
     e.dataTransfer.effectAllowed = 'move'
   }
@@ -28,8 +190,9 @@ export default function ModuleStore() {
     e.preventDefault()
     if (!dragId || dragId === targetId) { resetDrag(); return }
     const from = activeModules.indexOf(dragId)
-    const to = activeModules.indexOf(targetId)
+    const to   = activeModules.indexOf(targetId)
     if (from === -1 || to === -1) { resetDrag(); return }
+    dragHappened.current = true
     const next = [...activeModules]
     next.splice(from, 1)
     next.splice(to, 0, dragId)
@@ -38,125 +201,98 @@ export default function ModuleStore() {
   }
 
   const handleDragEnd = () => resetDrag()
-  const resetDrag = () => { setDragId(null); setOverId(null) }
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
+  if (isLoading) {
+    return (
+      <div className="p-8 max-w-6xl mx-auto">
+        <div className="mb-8">
+          <div className="h-8 w-40 bg-[#1d1d1d] rounded-lg animate-pulse mb-2" />
+          <div className="h-4 w-56 bg-[#1a1a1a] rounded animate-pulse" />
+        </div>
+        <GridSkeleton count={8} />
+      </div>
+    )
+  }
 
   return (
-    <div className="p-8 max-w-3xl mx-auto animate-fade-in">
+    <div className="p-8 max-w-6xl mx-auto animate-fade-in">
+      {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-text">Модули</h1>
-        <p className="text-subtle mt-1">Подключите нужные области жизни</p>
+        <h1 className="text-2xl font-bold text-[#f0f0f0]">Модули</h1>
+        <p className="text-[#666] text-sm mt-1">Подключите нужные области жизни</p>
       </div>
 
-      <div className="flex flex-col gap-8">
-        {/* Мои модули — draggable active list */}
+      <div className="flex flex-col gap-10">
+
+        {/* ── Мои модули ─────────────────────────────────────────────────── */}
         {activeModules.length > 0 && (
-          <div>
-            <h2 className="text-xs uppercase tracking-widest text-subtle mb-3">Мои модули</h2>
-            <div className="flex flex-col gap-2">
-              {activeModules.map(modId => {
-                const mod = getModuleById(modId)
-                if (!mod) return null
-                const isDragging = dragId === modId
-                const isOver = overId === modId && dragId !== modId
-                return (
-                  <div
-                    key={modId}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, modId)}
-                    onDragOver={(e) => handleDragOver(e, modId)}
-                    onDrop={(e) => handleDrop(e, modId)}
+          <section>
+            <h2 className="text-[10px] uppercase tracking-widest text-[#444] mb-3 flex items-center gap-2">
+              <span>Мои модули</span>
+              <span className="text-[#333]">·</span>
+              <span className="text-[#333] normal-case tracking-normal text-[10px]">
+                перетащите, чтобы изменить порядок
+              </span>
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {activeModules.map(modId => (
+                <div key={modId} className="min-h-[176px]">
+                  <ActiveModuleCard
+                    modId={modId}
+                    isDragging={dragId === modId}
+                    isOver={overId === modId && dragId !== modId}
+                    dragHappened={dragHappened}
+                    onDragStart={e => handleDragStart(e, modId)}
+                    onDragOver={e => handleDragOver(e, modId)}
+                    onDrop={e => handleDrop(e, modId)}
                     onDragEnd={handleDragEnd}
-                    className={`
-                      flex items-center gap-3 p-4 rounded-xl border transition-all
-                      cursor-grab active:cursor-grabbing select-none
-                      ${isDragging
-                        ? 'opacity-30 bg-surface border-muted scale-[0.98]'
-                        : isOver
-                          ? 'bg-[#1a1a2e] border-accent/50 shadow-[0_0_0_1px_rgba(108,99,255,0.2)]'
-                          : 'bg-[#1d1d1d] border-[#333] hover:bg-[#222] hover:border-[#3f3f3f]'
-                      }
-                    `}
-                  >
-                    <GripVertical size={16} className="text-subtle opacity-50 shrink-0" />
-                    <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: mod.color + '20' }}
-                    >
-                      {(() => { const mi = MODULE_ICONS[mod.id]; return mi ? <mi.Icon className="w-4 h-4" style={{ color: mi.color }} /> : <span style={{ color: mod.color }}>{mod.icon}</span> })()}
-                    </div>
-                    <span className="flex-1 font-medium text-text text-sm">{mod.name}</span>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onMouseDown={(e) => e.stopPropagation()}
-                        onClick={(e) => { e.stopPropagation(); router.push(`/modules/${modId}`) }}
-                        className="text-xs text-accent hover:text-accent-light px-3 py-1.5 rounded-lg border border-accent/30 hover:border-accent/60 transition-colors"
-                      >
-                        Открыть
-                      </button>
-                      <button
-                        onMouseDown={(e) => e.stopPropagation()}
-                        onClick={(e) => { e.stopPropagation(); removeModule(modId) }}
-                        className="text-xs text-danger/70 hover:text-danger px-3 py-1.5 rounded-lg border border-danger/20 hover:border-danger/40 transition-colors"
-                      >
-                        Удалить
-                      </button>
-                    </div>
-                  </div>
-                )
-              })}
+                    onOpen={() => router.push(`/modules/${modId}`)}
+                    onRemove={() => removeModule(modId)}
+                  />
+                </div>
+              ))}
             </div>
+          </section>
+        )}
+
+        {/* ── Пустое состояние ───────────────────────────────────────────── */}
+        {activeModules.length === 0 && (
+          <div className="text-center py-16">
+            <LayoutGrid className="w-10 h-10 text-[#2a2a2a] mx-auto mb-4" />
+            <p className="text-[#f0f0f0] font-medium mb-1">Нет подключённых модулей</p>
+            <p className="text-[#555] text-sm">Подключите модули из списка ниже</p>
           </div>
         )}
 
-        {/* Все модули по категориям */}
+        {/* ── Каталог по категориям ──────────────────────────────────────── */}
         {MODULE_CATEGORIES.map(cat => {
           const mods = ALL_MODULES.filter(m => m.category === cat.id)
           return (
-            <div key={cat.id}>
-              <h2 className="text-xs uppercase tracking-widest text-subtle mb-3">{cat.label}</h2>
-              <div className="flex flex-col gap-2">
+            <section key={cat.id}>
+              <h2 className="text-[10px] uppercase tracking-widest mb-3"
+                style={{ color: cat.color + 'aa' }}
+              >
+                {cat.label}
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 {mods.map(mod => {
                   const isActive = activeModules.includes(mod.id)
                   return (
-                    <div
-                      key={mod.id}
-                      className="flex items-center gap-4 p-4 bg-[#1d1d1d] border border-[#333] rounded-xl hover:bg-[#222] hover:border-[#3f3f3f] transition-all"
-                    >
-                      <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: mod.color + '20' }}
-                      >
-                        {(() => { const mi = MODULE_ICONS[mod.id]; return mi ? <mi.Icon className="w-5 h-5" style={{ color: mi.color }} /> : <span style={{ color: mod.color }}>{mod.icon}</span> })()}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-text text-sm">{mod.name}</div>
-                        <div className="text-subtle text-xs mt-0.5">{mod.description}</div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {isActive && (
-                          <button
-                            onClick={() => router.push(`/modules/${mod.id}`)}
-                            className="text-xs text-accent hover:text-accent-light px-3 py-1.5 rounded-lg border border-accent/30 hover:border-accent/60 transition-colors"
-                          >
-                            Открыть
-                          </button>
-                        )}
-                        <button
-                          onClick={() => isActive ? removeModule(mod.id) : addModule(mod.id)}
-                          className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${
-                            isActive
-                              ? 'text-danger/70 hover:text-danger border border-danger/20 hover:border-danger/40 hover:bg-danger/5'
-                              : 'text-white bg-accent hover:bg-accent-light'
-                          }`}
-                        >
-                          {isActive ? 'Удалить' : 'Добавить'}
-                        </button>
-                      </div>
+                    <div key={mod.id} className="min-h-[160px]">
+                      <CatalogModuleCard
+                        mod={mod}
+                        isActive={isActive}
+                        onAdd={() => addModule(mod.id)}
+                        onOpen={() => router.push(`/modules/${mod.id}`)}
+                        onRemove={() => removeModule(mod.id)}
+                      />
                     </div>
                   )
                 })}
               </div>
-            </div>
+            </section>
           )
         })}
       </div>

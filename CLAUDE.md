@@ -52,6 +52,7 @@
 - RLS-safe reorder: individual UPDATE на каждую строку (не upsert), Promise.all.
 - Toast: fixed top-4 right-4 z-50, AlertCircle, auto-dismiss 3s.
 - Skeleton: [1,2,3].map(i => <div key={i} className="h-20 bg-[#1d1d1d] border border-[#333] rounded-xl animate-pulse"/>).
+- Страница /modules: адаптивная сетка карточек (grid-cols-1 sm:2 lg:3 xl:4). Два раздела — «Мои модули» (активные, draggable) + каталог по категориям. Drag-and-drop через dragHappened ref (сброс через setTimeout 200ms) — не ломает клики после дропа. Карточки одинаковой высоты через min-h + flex flex-col + mt-auto для кнопок.
 
 ## Заглушки «Функция в разработке» (каркас заложен, без реальной логики)
 - Питание: «Посчитать по фото».
