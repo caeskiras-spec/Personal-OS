@@ -494,7 +494,12 @@ export default function FocusModule() {
             <span className="text-[11px] font-semibold tracking-widest mt-1.5"
               style={{ color: meta.color + 'aa' }}
             >
-              {meta.label}
+              {phase === 'focus'
+                ? `РАБОТА ${(cycleCount % settings.cyclesBeforeLong) + 1}/${settings.cyclesBeforeLong}`
+                : phase === 'break'
+                  ? `ОТДЫХ ${cycleCount % settings.cyclesBeforeLong}/${settings.cyclesBeforeLong}`
+                  : 'БОЛЬШОЙ ОТДЫХ'
+              }
             </span>
           </Ring>
         </div>
