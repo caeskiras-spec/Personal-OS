@@ -57,17 +57,54 @@ input[type=number] {
   -moz-appearance: textfield;
 }
 
-/* ── Rich text editor (JournalModule) ─────────────────────────── */
-.rich-editor:empty:before {
+/* ── Tiptap editor & viewer (JournalModule) ───────────────────── */
+.tiptap-editor {
+  min-height: 180px;
+  padding: 0.75rem;
+  outline: none;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: #f0f0f0;
+}
+.tiptap-editor p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   color: #3a3a3a;
   pointer-events: none;
+  float: left;
+  height: 0;
 }
-.rich-editor h2 { font-size: 1.1rem; font-weight: 600; margin: 0.5rem 0 0.25rem; }
-.rich-editor ul, .rich-editor ol { padding-left: 1.4rem; }
-.rich-editor li { margin: 0.15rem 0; }
-.rich-editor b, .rich-editor strong { font-weight: 600; }
-.rich-editor u { text-decoration: underline; }
-.rich-editor em, .rich-editor i { font-style: italic; }
-.cl-item { display: flex; align-items: baseline; gap: 0.35rem; cursor: text; }
-.cl-item[data-done="true"] { opacity: 0.5; text-decoration: line-through; }
+/* Shared between editor and viewer */
+.tiptap-editor h2, .tiptap-view h2 {
+  font-size: 1.05rem; font-weight: 600; margin: 0.6rem 0 0.2rem; color: #f0f0f0;
+}
+.tiptap-editor ul, .tiptap-view ul {
+  list-style: disc; padding-left: 1.4rem; margin: 0.3rem 0;
+}
+.tiptap-editor ol, .tiptap-view ol {
+  list-style: decimal; padding-left: 1.4rem; margin: 0.3rem 0;
+}
+.tiptap-editor li, .tiptap-view li { margin: 0.1rem 0; }
+.tiptap-editor p, .tiptap-view p { margin: 0.1rem 0; }
+/* Task list */
+.tiptap-editor ul[data-type="taskList"],
+.tiptap-view  ul[data-type="taskList"] {
+  list-style: none; padding-left: 0.2rem; margin: 0.3rem 0;
+}
+.tiptap-editor ul[data-type="taskList"] li,
+.tiptap-view  ul[data-type="taskList"] li {
+  display: flex; align-items: baseline; gap: 0.5rem;
+}
+.tiptap-editor ul[data-type="taskList"] li > label,
+.tiptap-view  ul[data-type="taskList"] li > label {
+  display: flex; align-items: center; margin-top: 2px;
+}
+.tiptap-editor ul[data-type="taskList"] li > label input[type="checkbox"],
+.tiptap-view  ul[data-type="taskList"] li > label input[type="checkbox"] {
+  accent-color: #6c63ff; width: 14px; height: 14px; cursor: pointer; margin: 0;
+}
+.tiptap-editor ul[data-type="taskList"] li > div,
+.tiptap-view  ul[data-type="taskList"] li > div { flex: 1; }
+.tiptap-editor ul[data-type="taskList"] li[data-checked="true"] > div,
+.tiptap-view  ul[data-type="taskList"] li[data-checked="true"] > div {
+  text-decoration: line-through; opacity: 0.5;
+}

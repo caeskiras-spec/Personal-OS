@@ -1,17 +1,23 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { useEditor, EditorContent } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
+import Underline from '@tiptap/extension-underline'
+import TaskList from '@tiptap/extension-task-list'
+import TaskItem from '@tiptap/extension-task-item'
+import Placeholder from '@tiptap/extension-placeholder'
 import {
   BookOpen, Plus, Search, X, Tag, Filter,
-  Bold, Italic, Underline, List, ListOrdered, Heading2, CheckSquare,
-  AlertCircle, Trash2, Edit2,
+  Bold, Italic, Underline as UnderlineIcon, List, ListOrdered, Heading2, CheckSquare,
+  AlertCircle, Trash2, Edit2, Check,
 } from 'lucide-react'
 import { useOS } from '../../../lib/store'
 import { journalRepo }     from '../../../lib/db/journal'
 import { journalTagsRepo } from '../../../lib/db/journalTags'
 import DatePicker from './DatePicker'
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// ─── Constants ─────────────────────────────────────────────────────────────────
 
 const MOODS = [
   { key: 'awful',   emoji: '😞', label: 'Ужасно' },
@@ -22,24 +28,19 @@ const MOODS = [
   { key: 'amazing', emoji: '🤩', label: 'Невероятно' },
 ]
 
-const TAG_COLORS = [
-  '#6c63ff','#22c55e','#f59e0b','#ef4444',
-  '#3b82f6','#ec4899','#8b5cf6','#06b6d4','#10b981','#f97316',
-]
-const TAG_EMOJIS = ['🏷️','⭐','🔥','💡','📝','🎯','💬','🌟','🎨','📚','🌿','🎵']
+const TAG_COLORS  = ['#6c63ff','#22c55e','#f59e0b','#ef4444','#3b82f6','#ec4899','#8b5cf6','#06b6d4','#10b981','#f97316']
+const TAG_EMOJIS  = ['🏷️','⭐','🔥','💡','📝','🎯','💬','🌟','🎨','📚','🌿','🎵']
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Helpers ───────────────────────────────────────────────────────────────────
 
 function localStr(d = new Date()) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 }
 
-function formatDate(str) {
+function fmtDate(str) {
   if (!str) return ''
   const [y, m, d] = str.split('-')
-  return new Date(+y, +m - 1, +d).toLocaleDateString('ru-RU', {
-    day: 'numeric', month: 'long', year: 'numeric',
-  })
+  return new Date(+y, +m - 1, +d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
 function stripHtml(html) {
@@ -47,69 +48,70 @@ function stripHtml(html) {
   return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
-// ─── RichEditor ───────────────────────────────────────────────────────────────
+// ─── Tiptap RichEditor ─────────────────────────────────────────────────────────
 
-function RichEditor({ value, onChange, placeholder = 'Напишите что-нибудь...' }) {
-  const ref = useRef(null)
+function RichEditor({ defaultContent, onChange }) {
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({ heading: { levels: [2] } }),
+      Underline,
+      TaskList,
+      TaskItem.configure({ nested: false }),
+      Placeholder.configure({ placeholder: 'Напишите что-нибудь...' }),
+    ],
+    content: defaultContent || '',
+    onUpdate: ({ editor }) => onChange(editor.getHTML()),
+    editorProps: {
+      attributes: { class: 'tiptap-editor' },
+    },
+    immediatelyRender: false,
+  })
 
-  // Only sync on mount; after that contenteditable owns its DOM
-  useEffect(() => {
-    if (ref.current) ref.current.innerHTML = value || ''
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const exec = useCallback((cmd, val = null) => {
-    ref.current?.focus()
-    document.execCommand(cmd, false, val)
-    onChange(ref.current?.innerHTML ?? '')
-  }, [onChange])
-
-  const handleChecklist = useCallback(() => {
-    const editor = ref.current
-    if (!editor) return
-    editor.focus()
-    const sel = window.getSelection()
-    if (!sel || !sel.rangeCount) return
-    const range = sel.getRangeAt(0)
-    range.deleteContents()
-    const item = document.createElement('div')
-    item.className = 'cl-item'
-    item.setAttribute('data-done', 'false')
-    item.innerHTML = '☐ '
-    range.insertNode(item)
-    // Move cursor to end of inserted node
-    const newRange = document.createRange()
-    newRange.setStartAfter(item)
-    newRange.collapse(true)
-    sel.removeAllRanges()
-    sel.addRange(newRange)
-    onChange(editor.innerHTML)
-  }, [onChange])
-
-  // Toggle checklist item on click
-  const handleClick = useCallback((e) => {
-    const item = e.target.closest?.('.cl-item')
-    if (!item) return
-    const done = item.getAttribute('data-done') === 'true'
-    item.setAttribute('data-done', String(!done))
-    const text = item.innerHTML
-    item.innerHTML = text.replace(/^[☐☑] ?/, (!done ? '☑' : '☐') + ' ')
-    onChange(ref.current?.innerHTML ?? '')
-  }, [onChange])
+  if (!editor) return null
 
   const TOOLS = [
-    { icon: Bold,        title: 'Жирный',             action: () => exec('bold') },
-    { icon: Italic,      title: 'Курсив',              action: () => exec('italic') },
-    { icon: Underline,   title: 'Подчёркнутый',        action: () => exec('underline') },
+    {
+      icon: Bold, title: 'Жирный',
+      active: editor.isActive('bold'),
+      action: () => editor.chain().focus().toggleBold().run(),
+    },
+    {
+      icon: Italic, title: 'Курсив',
+      active: editor.isActive('italic'),
+      action: () => editor.chain().focus().toggleItalic().run(),
+    },
+    {
+      icon: UnderlineIcon, title: 'Подчёркнутый',
+      active: editor.isActive('underline'),
+      action: () => editor.chain().focus().toggleUnderline().run(),
+    },
     null,
-    { icon: Heading2,    title: 'Заголовок',           action: () => exec('formatBlock', 'h2') },
-    { icon: List,        title: 'Маркированный список', action: () => exec('insertUnorderedList') },
-    { icon: ListOrdered, title: 'Нумерованный список', action: () => exec('insertOrderedList') },
-    { icon: CheckSquare, title: 'Чек-лист',            action: handleChecklist },
+    {
+      icon: Heading2, title: 'Заголовок',
+      active: editor.isActive('heading', { level: 2 }),
+      action: () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
+    },
+    {
+      icon: List, title: 'Маркированный список',
+      active: editor.isActive('bulletList'),
+      action: () => editor.chain().focus().toggleBulletList().run(),
+    },
+    {
+      icon: ListOrdered, title: 'Нумерованный список',
+      active: editor.isActive('orderedList'),
+      action: () => editor.chain().focus().toggleOrderedList().run(),
+    },
+    {
+      icon: CheckSquare, title: 'Чек-лист',
+      active: editor.isActive('taskList'),
+      action: () => editor.chain().focus().toggleTaskList().run(),
+    },
   ]
 
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="flex items-center gap-0.5 p-1.5 bg-[#111] border border-[#2a2a2a] rounded-lg flex-wrap">
+      {/* Toolbar */}
+      <div className="flex items-center gap-0.5 p-1.5 bg-[#0f0f0f] border border-[#2a2a2a] rounded-lg flex-wrap">
         {TOOLS.map((tool, i) =>
           tool === null
             ? <div key={i} className="w-px h-4 bg-[#2a2a2a] mx-1 shrink-0" />
@@ -119,121 +121,194 @@ function RichEditor({ value, onChange, placeholder = 'Напишите что-н
                 type="button"
                 title={tool.title}
                 onMouseDown={e => { e.preventDefault(); tool.action() }}
-                className="p-1.5 rounded hover:bg-white/10 text-[#666] hover:text-[#f0f0f0] transition-colors"
+                className={`p-1.5 rounded transition-colors ${
+                  tool.active
+                    ? 'bg-[#6c63ff]/25 text-[#8b85ff]'
+                    : 'text-[#666] hover:bg-white/8 hover:text-[#f0f0f0]'
+                }`}
               >
                 <tool.icon className="w-3.5 h-3.5" />
               </button>
             )
         )}
       </div>
-      <div
-        ref={ref}
-        contentEditable
-        suppressContentEditableWarning
-        onInput={e => onChange(e.currentTarget.innerHTML)}
-        onClick={handleClick}
-        data-placeholder={placeholder}
-        className="min-h-[180px] text-sm text-[#f0f0f0] leading-relaxed outline-none p-3 bg-[#111] border border-[#2a2a2a] rounded-lg focus:border-[#6c63ff]/40 transition-colors rich-editor"
-      />
+      {/* Editor area */}
+      <div className="bg-[#0f0f0f] border border-[#2a2a2a] rounded-lg focus-within:border-[#6c63ff]/40 transition-colors">
+        <EditorContent editor={editor} />
+      </div>
     </div>
   )
 }
 
-// ─── TagsManagerModal ─────────────────────────────────────────────────────────
+// ─── HTML viewer (read-mode) ────────────────────────────────────────────────────
 
-function TagsManagerModal({ tags, userId, onClose, onTagsChange }) {
-  const [list, setList] = useState(tags)
-  const [creating, setCreating] = useState(false)
-  const [newName, setNewName]   = useState('')
-  const [newEmoji, setNewEmoji] = useState('🏷️')
-  const [newColor, setNewColor] = useState(TAG_COLORS[0])
+function RichView({ html }) {
+  return (
+    <div
+      className="tiptap-view text-sm text-[#f0f0f0] leading-relaxed"
+      dangerouslySetInnerHTML={{ __html: html || '' }}
+    />
+  )
+}
+
+// ─── InlineTagCreator ──────────────────────────────────────────────────────────
+
+function InlineTagCreator({ userId, onCreated, onCancel }) {
+  const [name,  setName]  = useState('')
+  const [emoji, setEmoji] = useState('🏷️')
+  const [color, setColor] = useState(TAG_COLORS[0])
+  const [busy,  setBusy]  = useState(false)
 
   const create = async () => {
-    if (!newName.trim()) return
-    const optimistic = { id: `tmp-${Date.now()}`, name: newName.trim(), emoji: newEmoji, color: newColor }
-    const next = [...list, optimistic]
-    setList(next)
-    onTagsChange(next)
-    setCreating(false); setNewName('')
+    if (!name.trim() || busy) return
+    setBusy(true)
     try {
-      const saved = await journalTagsRepo.create(userId, { name: optimistic.name, emoji: newEmoji, color: newColor })
-      setList(p => p.map(t => t.id === optimistic.id ? saved : t))
-      onTagsChange(p => p.map(t => t.id === optimistic.id ? saved : t))
-    } catch {
-      setList(p => p.filter(t => t.id !== optimistic.id))
-      onTagsChange(p => p.filter(t => t.id !== optimistic.id))
+      const saved = await journalTagsRepo.create(userId, { name: name.trim(), emoji, color })
+      onCreated(saved)
+    } catch { /* silent */ } finally {
+      setBusy(false)
     }
   }
 
-  const remove = async (id) => {
-    setList(p => p.filter(t => t.id !== id))
-    onTagsChange(p => p.filter(t => t.id !== id))
+  return (
+    <div className="mt-2 p-3 bg-[#0f0f0f] border border-[#2a2a2a] rounded-xl flex flex-col gap-2 animate-slide-up">
+      <input
+        autoFocus
+        value={name}
+        onChange={e => setName(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') create(); if (e.key === 'Escape') onCancel() }}
+        placeholder="Название тега"
+        className="bg-transparent border-b border-[#2a2a2a] focus:border-[#6c63ff]/40 py-1 text-sm text-[#f0f0f0] outline-none placeholder:text-[#3a3a3a] transition-colors"
+      />
+      <div className="flex gap-1 flex-wrap">
+        {TAG_EMOJIS.map(em => (
+          <button key={em} type="button" onClick={() => setEmoji(em)}
+            className={`text-base px-1 py-0.5 rounded transition-all ${emoji === em ? 'bg-[#6c63ff]/20 scale-110' : 'hover:bg-white/5'}`}
+          >{em}</button>
+        ))}
+      </div>
+      <div className="flex gap-1.5 flex-wrap">
+        {TAG_COLORS.map(c => (
+          <button key={c} type="button" onClick={() => setColor(c)}
+            className={`w-5 h-5 rounded-full transition-transform ${color === c ? 'scale-125 ring-2 ring-white/30' : 'hover:scale-110'}`}
+            style={{ background: c }}
+          />
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <button type="button" onClick={onCancel} className="flex-1 py-1.5 text-xs text-[#666] border border-[#2a2a2a] rounded-lg hover:border-[#333] transition-colors">
+          Отмена
+        </button>
+        <button type="button" onClick={create} disabled={!name.trim() || busy}
+          className="flex-1 py-1.5 text-xs bg-[#6c63ff] hover:bg-[#8b85ff] text-white rounded-lg transition-colors disabled:opacity-40"
+        >
+          {busy ? '...' : 'Создать'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── TagsManagerModal ──────────────────────────────────────────────────────────
+
+function TagsManagerModal({ tags, userId, onClose, onTagsChange }) {
+  const [list,         setList]         = useState(tags)
+  const [creatingNew,  setCreatingNew]  = useState(false)
+  const [editingId,    setEditingId]    = useState(null)
+  const [editName,     setEditName]     = useState('')
+  const [editEmoji,    setEditEmoji]    = useState('')
+  const [editColor,    setEditColor]    = useState('')
+
+  const sync = next => { setList(next); onTagsChange(next) }
+
+  const handleCreated = saved => {
+    const next = [...list, saved]
+    sync(next)
+    setCreatingNew(false)
+  }
+
+  const startEdit = tag => {
+    setEditingId(tag.id); setEditName(tag.name)
+    setEditEmoji(tag.emoji || '🏷️'); setEditColor(tag.color || TAG_COLORS[0])
+  }
+
+  const saveEdit = async () => {
+    if (!editName.trim()) return
+    const next = list.map(t => t.id === editingId ? { ...t, name: editName.trim(), emoji: editEmoji, color: editColor } : t)
+    sync(next); setEditingId(null)
+    try {
+      await journalTagsRepo.update(editingId, { name: editName.trim(), emoji: editEmoji, color: editColor })
+    } catch { /* silent */ }
+  }
+
+  const remove = async id => {
+    sync(list.filter(t => t.id !== id))
     try { await journalTagsRepo.remove(id) } catch { /* silent */ }
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="bg-[#1a1a1a] border border-[#333] rounded-2xl w-full max-w-sm p-5 animate-slide-up">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-[#f0f0f0]">Теги</h3>
+          <h3 className="font-semibold text-[#f0f0f0]">Управление тегами</h3>
           <button onClick={onClose} className="p-1 rounded hover:bg-white/5 text-[#666] hover:text-[#f0f0f0] transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="flex flex-col max-h-48 overflow-y-auto mb-3">
-          {list.length === 0 && !creating && (
-            <p className="text-sm text-[#666] text-center py-4">Нет тегов</p>
+        <div className="flex flex-col max-h-52 overflow-y-auto gap-1 mb-3">
+          {list.length === 0 && !creatingNew && (
+            <p className="text-sm text-[#666] text-center py-3">Нет тегов</p>
           )}
           {list.map(tag => (
-            <div key={tag.id} className="flex items-center gap-2 py-2 border-b border-[#222] last:border-0">
-              <span className="text-base leading-none">{tag.emoji}</span>
-              <div className="w-2 h-2 rounded-full shrink-0" style={{ background: tag.color }} />
-              <span className="flex-1 text-sm text-[#f0f0f0]">{tag.name}</span>
-              <button onClick={() => remove(tag.id)} className="p-1 rounded hover:bg-red-500/10 text-[#666] hover:text-[#ef4444] transition-colors">
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
+            <div key={tag.id}>
+              {editingId === tag.id ? (
+                <div className="p-2 bg-[#111] border border-[#2a2a2a] rounded-xl flex flex-col gap-2">
+                  <input value={editName} onChange={e => setEditName(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditingId(null) }}
+                    className="bg-transparent border-b border-[#2a2a2a] text-sm text-[#f0f0f0] outline-none py-0.5"
+                  />
+                  <div className="flex gap-1 flex-wrap">
+                    {TAG_EMOJIS.map(em => (
+                      <button key={em} type="button" onClick={() => setEditEmoji(em)}
+                        className={`text-sm px-1 rounded ${editEmoji === em ? 'bg-[#6c63ff]/20' : 'hover:bg-white/5'}`}
+                      >{em}</button>
+                    ))}
+                  </div>
+                  <div className="flex gap-1 flex-wrap">
+                    {TAG_COLORS.map(c => (
+                      <button key={c} type="button" onClick={() => setEditColor(c)}
+                        className={`w-4 h-4 rounded-full transition-transform ${editColor === c ? 'scale-125 ring-1 ring-white/30' : ''}`}
+                        style={{ background: c }}
+                      />
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => setEditingId(null)} className="flex-1 py-1 text-xs text-[#666] border border-[#2a2a2a] rounded-lg">Отмена</button>
+                    <button type="button" onClick={saveEdit} className="flex-1 py-1 text-xs bg-[#6c63ff] text-white rounded-lg">Сохранить</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 py-2 px-1 rounded-lg hover:bg-white/3 group">
+                  <span className="text-base leading-none">{tag.emoji}</span>
+                  <div className="w-2 h-2 rounded-full shrink-0" style={{ background: tag.color }} />
+                  <span className="flex-1 text-sm text-[#f0f0f0]">{tag.name}</span>
+                  <button onClick={() => startEdit(tag)} className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-white/5 text-[#666] hover:text-[#f0f0f0] transition-all">
+                    <Edit2 className="w-3 h-3" />
+                  </button>
+                  <button onClick={() => remove(tag.id)} className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/10 text-[#666] hover:text-[#ef4444] transition-all">
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>
 
-        {creating ? (
-          <div className="flex flex-col gap-2.5 pt-2 border-t border-[#222]">
-            <input
-              autoFocus
-              value={newName}
-              onChange={e => setNewName(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') create(); if (e.key === 'Escape') setCreating(false) }}
-              placeholder="Название тега"
-              className="bg-[#111] border border-[#333] rounded-lg px-3 py-2 text-sm text-[#f0f0f0] outline-none focus:border-[#6c63ff]/50 placeholder:text-[#3a3a3a]"
-            />
-            <div className="flex gap-1 flex-wrap">
-              {TAG_EMOJIS.map(em => (
-                <button key={em} onClick={() => setNewEmoji(em)}
-                  className={`text-lg px-1 py-0.5 rounded transition-all ${newEmoji === em ? 'bg-[#6c63ff]/20 scale-110' : 'hover:bg-white/5'}`}
-                >{em}</button>
-              ))}
-            </div>
-            <div className="flex gap-1.5 flex-wrap">
-              {TAG_COLORS.map(c => (
-                <button key={c} onClick={() => setNewColor(c)}
-                  className={`w-5 h-5 rounded-full transition-transform ${newColor === c ? 'scale-125 ring-2 ring-white/30' : 'hover:scale-110'}`}
-                  style={{ background: c }}
-                />
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => setCreating(false)} className="flex-1 py-2 text-sm text-[#666] border border-[#333] rounded-xl hover:border-[#444] transition-colors">
-                Отмена
-              </button>
-              <button onClick={create} disabled={!newName.trim()} className="flex-1 py-2 text-sm bg-[#6c63ff] hover:bg-[#8b85ff] text-white rounded-xl transition-colors disabled:opacity-40">
-                Создать
-              </button>
-            </div>
-          </div>
+        {creatingNew ? (
+          <InlineTagCreator userId={userId} onCreated={handleCreated} onCancel={() => setCreatingNew(false)} />
         ) : (
-          <button
-            onClick={() => setCreating(true)}
+          <button onClick={() => setCreatingNew(true)}
             className="w-full py-2 text-sm text-[#666] hover:text-[#f0f0f0] border border-dashed border-[#333] hover:border-[#444] rounded-xl transition-colors flex items-center justify-center gap-1.5"
           >
             <Plus className="w-4 h-4" /> Новый тег
@@ -244,13 +319,13 @@ function TagsManagerModal({ tags, userId, onClose, onTagsChange }) {
   )
 }
 
-// ─── EntryCard ────────────────────────────────────────────────────────────────
+// ─── EntryCard ─────────────────────────────────────────────────────────────────
 
 function EntryCard({ entry, tags, onEdit, onDelete }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const mood       = MOODS.find(m => m.key === entry.mood)
-  const entryTags  = tags.filter(t => (entry.tags || []).includes(t.id))
-  const snippet    = stripHtml(entry.content).slice(0, 130)
+  const mood      = MOODS.find(m => m.key === entry.mood)
+  const entryTags = tags.filter(t => (entry.tags || []).includes(t.id))
+  const snippet   = stripHtml(entry.content).slice(0, 130)
 
   return (
     <div
@@ -260,7 +335,7 @@ function EntryCard({ entry, tags, onEdit, onDelete }) {
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-xs text-[#666]">{formatDate(entry.date)}</span>
+            <span className="text-xs text-[#666]">{fmtDate(entry.date)}</span>
             {mood && <span title={mood.label} className="text-base leading-none">{mood.emoji}</span>}
           </div>
           {entry.title && (
@@ -272,8 +347,7 @@ function EntryCard({ entry, tags, onEdit, onDelete }) {
           {entryTags.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2">
               {entryTags.map(tag => (
-                <span
-                  key={tag.id}
+                <span key={tag.id}
                   className="flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-medium"
                   style={{ background: tag.color + '25', color: tag.color }}
                 >
@@ -284,32 +358,21 @@ function EntryCard({ entry, tags, onEdit, onDelete }) {
             </div>
           )}
         </div>
-
         {/* Actions */}
         <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
           {confirmDelete ? (
             <>
-              <button onClick={() => setConfirmDelete(false)} className="text-xs text-[#666] px-2 py-1 rounded hover:bg-white/5 transition-colors">
-                Нет
-              </button>
-              <button onClick={() => onDelete(entry.id)} className="text-xs text-[#ef4444] px-2 py-1 rounded hover:bg-red-500/10 transition-colors">
-                Удалить
-              </button>
+              <button onClick={() => setConfirmDelete(false)} className="text-xs text-[#666] px-2 py-1 rounded hover:bg-white/5 transition-colors">Нет</button>
+              <button onClick={() => onDelete(entry.id)} className="text-xs text-[#ef4444] px-2 py-1 rounded hover:bg-red-500/10 transition-colors">Удалить</button>
             </>
           ) : (
             <>
-              <button
-                onClick={() => onEdit(entry)}
+              <button onClick={() => onEdit(entry)}
                 className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-white/5 text-[#666] transition-all"
-              >
-                <Edit2 className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => setConfirmDelete(true)}
+              ><Edit2 className="w-3.5 h-3.5" /></button>
+              <button onClick={() => setConfirmDelete(true)}
                 className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/10 text-[#666] hover:text-[#ef4444] transition-all"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
+              ><Trash2 className="w-3.5 h-3.5" /></button>
             </>
           )}
         </div>
@@ -318,36 +381,40 @@ function EntryCard({ entry, tags, onEdit, onDelete }) {
   )
 }
 
-// ─── EditorPanel ──────────────────────────────────────────────────────────────
+// ─── EditorPanel ───────────────────────────────────────────────────────────────
+// key={entry?.id || 'new'} on this component ensures full remount when switching entries
 
-function EditorPanel({ entry, tags, onSave, onClose }) {
-  const isNew        = !entry
-  const [date, setDate]         = useState(entry?.date    || localStr())
-  const [title, setTitle]       = useState(entry?.title   || '')
-  const [content, setContent]   = useState(entry?.content || '')
-  const [mood, setMood]         = useState(entry?.mood    || null)
-  const [selTags, setSelTags]   = useState(entry?.tags    || [])
-  const [saving, setSaving]     = useState(false)
+function EditorPanel({ entry, tags, userId, onSave, onClose, onTagsChange }) {
+  const isNew = !entry
+
+  const [date,       setDate]       = useState(entry?.date    || localStr())
+  const [title,      setTitle]      = useState(entry?.title   || '')
+  const [content,    setContent]    = useState(entry?.content || '')
+  const [mood,       setMood]       = useState(entry?.mood    || null)
+  const [selTags,    setSelTags]    = useState(entry?.tags    || [])
+  const [saving,     setSaving]     = useState(false)
+  const [addingTag,  setAddingTag]  = useState(false)
 
   const toggleTag = id => setSelTags(p => p.includes(id) ? p.filter(t => t !== id) : [...p, id])
+
+  const handleTagCreated = saved => {
+    onTagsChange(p => [...p, saved])
+    setSelTags(p => [...p, saved.id])
+    setAddingTag(false)
+  }
 
   const save = async () => {
     if (!content.trim() && !title.trim()) return
     setSaving(true)
-    try {
-      await onSave({ id: entry?.id, date, title, content, mood, tags: selTags })
-    } finally {
-      setSaving(false)
-    }
+    try { await onSave({ id: entry?.id, date, title, content, mood, tags: selTags }) }
+    finally { setSaving(false) }
   }
 
   return (
-    <div className="w-[420px] shrink-0 border-l border-[#2a2a2a] bg-[#141414] flex flex-col h-full overflow-hidden animate-slide-up">
+    <div className="w-[440px] shrink-0 border-l border-[#2a2a2a] bg-[#141414] flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-[#2a2a2a]">
-        <span className="text-sm font-semibold text-[#f0f0f0]">
-          {isNew ? 'Новая запись' : 'Редактирование'}
-        </span>
+      <div className="flex items-center justify-between px-6 py-4 border-b border-[#2a2a2a] shrink-0">
+        <span className="text-sm font-semibold text-[#f0f0f0]">{isNew ? 'Новая запись' : 'Редактирование'}</span>
         <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/5 text-[#666] hover:text-[#f0f0f0] transition-colors">
           <X className="w-4 h-4" />
         </button>
@@ -355,26 +422,20 @@ function EditorPanel({ entry, tags, onSave, onClose }) {
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-4">
-        {/* Date row */}
-        <div className="flex items-center gap-3">
-          <DatePicker value={date} onChange={setDate} noOverdue />
-        </div>
+        {/* Date */}
+        <DatePicker value={date} onChange={setDate} noOverdue />
 
         {/* Mood */}
         <div>
           <p className="text-[10px] text-[#3a3a3a] uppercase tracking-widest mb-2">Настроение</p>
           <div className="flex gap-1">
             {MOODS.map(m => (
-              <button
-                key={m.key}
-                title={m.label}
+              <button key={m.key} title={m.label}
                 onClick={() => setMood(mood === m.key ? null : m.key)}
                 className={`text-xl p-1.5 rounded-lg transition-all select-none ${
                   mood === m.key ? 'bg-white/10 scale-125' : 'opacity-35 hover:opacity-70'
                 }`}
-              >
-                {m.emoji}
-              </button>
+              >{m.emoji}</button>
             ))}
           </div>
         </div>
@@ -389,46 +450,47 @@ function EditorPanel({ entry, tags, onSave, onClose }) {
         />
 
         {/* Rich editor */}
-        <RichEditor value={content} onChange={setContent} />
+        <RichEditor defaultContent={content} onChange={setContent} />
 
         {/* Tags */}
-        {tags.length > 0 && (
-          <div>
-            <p className="text-[10px] text-[#3a3a3a] uppercase tracking-widest mb-2">Теги</p>
-            <div className="flex flex-wrap gap-1.5">
-              {tags.map(tag => {
-                const active = selTags.includes(tag.id)
-                return (
-                  <button
-                    key={tag.id}
-                    onClick={() => toggleTag(tag.id)}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all"
-                    style={active
-                      ? { background: tag.color + '30', color: tag.color, border: `1px solid ${tag.color}60` }
-                      : { background: '#1d1d1d', color: '#666', border: '1px solid #2a2a2a' }
-                    }
-                  >
-                    {tag.emoji && <span>{tag.emoji}</span>}
-                    {tag.name}
-                  </button>
-                )
-              })}
-            </div>
+        <div>
+          <p className="text-[10px] text-[#3a3a3a] uppercase tracking-widest mb-2">Теги</p>
+          <div className="flex flex-wrap gap-1.5">
+            {tags.map(tag => {
+              const active = selTags.includes(tag.id)
+              return (
+                <button key={tag.id} onClick={() => toggleTag(tag.id)}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all"
+                  style={active
+                    ? { background: tag.color + '30', color: tag.color, border: `1px solid ${tag.color}60` }
+                    : { background: '#1d1d1d', color: '#666', border: '1px solid #2a2a2a' }
+                  }
+                >
+                  {tag.emoji && <span>{tag.emoji}</span>}
+                  {tag.name}
+                  {active && <Check className="w-3 h-3 ml-0.5" />}
+                </button>
+              )
+            })}
+            <button
+              onClick={() => setAddingTag(v => !v)}
+              className="px-2.5 py-1 rounded-full text-xs text-[#666] hover:text-[#f0f0f0] border border-dashed border-[#2a2a2a] hover:border-[#3a3a3a] transition-colors flex items-center gap-1"
+            >
+              <Plus className="w-3 h-3" /> Новый
+            </button>
           </div>
-        )}
+          {addingTag && (
+            <InlineTagCreator userId={userId} onCreated={handleTagCreated} onCancel={() => setAddingTag(false)} />
+          )}
+        </div>
       </div>
 
       {/* Footer */}
-      <div className="px-6 py-4 border-t border-[#2a2a2a] flex gap-2">
-        <button
-          onClick={onClose}
+      <div className="px-6 py-4 border-t border-[#2a2a2a] flex gap-2 shrink-0">
+        <button onClick={onClose}
           className="flex-1 py-2.5 text-sm text-[#666] border border-[#2a2a2a] hover:border-[#3a3a3a] rounded-xl transition-colors"
-        >
-          Отмена
-        </button>
-        <button
-          onClick={save}
-          disabled={saving || (!content.trim() && !title.trim())}
+        >Отмена</button>
+        <button onClick={save} disabled={saving || (!content.trim() && !title.trim())}
           className="flex-[2] py-2.5 text-sm bg-[#6c63ff] hover:bg-[#8b85ff] text-white font-medium rounded-xl transition-colors disabled:opacity-40"
         >
           {saving ? 'Сохранение...' : 'Сохранить'}
@@ -438,37 +500,33 @@ function EditorPanel({ entry, tags, onSave, onClose }) {
   )
 }
 
-// ─── JournalModule ────────────────────────────────────────────────────────────
+// ─── JournalModule ─────────────────────────────────────────────────────────────
 
 export default function JournalModule() {
   const { userId } = useOS()
 
-  const [entries, setEntries] = useState([])
-  const [tags,    setTags]    = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState(null)
-  const [panel,   setPanel]   = useState(null) // null | 'new' | entry object
-  const [showTagsManager, setShowTagsManager] = useState(false)
+  const [entries,  setEntries]  = useState([])
+  const [tags,     setTags]     = useState([])
+  const [loading,  setLoading]  = useState(true)
+  const [error,    setError]    = useState(null)
+  const [panel,    setPanel]    = useState(null) // null | 'new' | entry
+  const [showMgr,  setShowMgr]  = useState(false)
 
-  // ── Filters
-  const [search,          setSearch]          = useState('')
-  const [filterTag,       setFilterTag]       = useState(null)
-  const [filterMood,      setFilterMood]      = useState(null)
-  const [filterDateFrom,  setFilterDateFrom]  = useState('')
-  const [filterDateTo,    setFilterDateTo]    = useState('')
-  const [showFilters,     setShowFilters]     = useState(false)
+  const [search,          setSearch]         = useState('')
+  const [filterTag,       setFilterTag]      = useState(null)
+  const [filterMood,      setFilterMood]     = useState(null)
+  const [filterDateFrom,  setFilterDateFrom] = useState('')
+  const [filterDateTo,    setFilterDateTo]   = useState('')
+  const [showFilters,     setShowFilters]    = useState(false)
 
   const load = useCallback(async () => {
     if (!userId) return
     setLoading(true); setError(null)
     try {
-      const [e, t] = await Promise.all([
-        journalRepo.list(userId),
-        journalTagsRepo.list(userId),
-      ])
+      const [e, t] = await Promise.all([journalRepo.list(userId), journalTagsRepo.list(userId)])
       setEntries(e); setTags(t)
     } catch (err) {
-      setError(err.message || 'Ошибка')
+      setError(err.message || 'Ошибка загрузки')
     } finally {
       setLoading(false)
     }
@@ -476,60 +534,54 @@ export default function JournalModule() {
 
   useEffect(() => { load() }, [load])
 
-  // ── Filtered list
+  // ── Filtering ───────────────────────────────────────────────────────────────
+
   const filtered = useMemo(() => {
     let res = entries
-    if (search.trim()) {
-      const q = search.toLowerCase()
+    const q = search.trim().toLowerCase()
+    if (q) {
       res = res.filter(e =>
         (e.title || '').toLowerCase().includes(q) ||
         stripHtml(e.content || '').toLowerCase().includes(q)
       )
     }
-    if (filterTag)      res = res.filter(e => (e.tags || []).includes(filterTag))
+    if (filterTag)      res = res.filter(e => Array.isArray(e.tags) && e.tags.includes(filterTag))
     if (filterMood)     res = res.filter(e => e.mood === filterMood)
-    if (filterDateFrom) res = res.filter(e => e.date >= filterDateFrom)
-    if (filterDateTo)   res = res.filter(e => e.date <= filterDateTo)
+    if (filterDateFrom) res = res.filter(e => (e.date || '') >= filterDateFrom)
+    if (filterDateTo)   res = res.filter(e => (e.date || '') <= filterDateTo)
     return res
   }, [entries, search, filterTag, filterMood, filterDateFrom, filterDateTo])
 
-  const hasActiveFilter = search || filterTag || filterMood || filterDateFrom || filterDateTo
+  const hasFilter = !!(search || filterTag || filterMood || filterDateFrom || filterDateTo)
 
   const clearFilters = () => {
     setSearch(''); setFilterTag(null); setFilterMood(null)
     setFilterDateFrom(''); setFilterDateTo('')
   }
 
-  // ── CRUD
+  // ── CRUD ────────────────────────────────────────────────────────────────────
+
   const saveEntry = useCallback(async ({ id, date, title, content, mood, tags: entryTags }) => {
     if (id) {
-      // Optimistic update
       const snapshot = entries
       setEntries(p => p.map(e => e.id === id ? { ...e, title, content, mood, tags: entryTags, date } : e))
       setPanel(null)
       try {
         const saved = await journalRepo.update(id, { title, content, mood, tags: entryTags, date })
         setEntries(p => p.map(e => e.id === id ? saved : e))
-      } catch {
-        setEntries(snapshot)
-      }
+      } catch { setEntries(snapshot) }
     } else {
-      const optimistic = {
-        id: `tmp-${Date.now()}`, title, content, mood,
-        tags: entryTags, date, created_at: new Date().toISOString(),
-      }
+      const optimistic = { id: `tmp-${Date.now()}`, title, content, mood, tags: entryTags, date, created_at: new Date().toISOString() }
       setEntries(p => [optimistic, ...p])
       setPanel(null)
       try {
         const saved = await journalRepo.create(userId, { title, content, mood, tags: entryTags, date })
         setEntries(p => p.map(e => e.id === optimistic.id ? saved : e))
-      } catch {
-        setEntries(p => p.filter(e => e.id !== optimistic.id))
-      }
+      } catch { setEntries(p => p.filter(e => e.id !== optimistic.id)) }
     }
   }, [entries, userId])
 
-  const deleteEntry = useCallback(async (id) => {
+  const deleteEntry = useCallback(async id => {
     const snapshot = entries
     setEntries(p => p.filter(e => e.id !== id))
     if (panel && typeof panel === 'object' && panel.id === id) setPanel(null)
@@ -537,14 +589,11 @@ export default function JournalModule() {
     catch { setEntries(snapshot) }
   }, [entries, panel])
 
-  // ── Loading / Error
+  // ── Render ──────────────────────────────────────────────────────────────────
+
   if (loading) return (
-    <div className="flex h-full">
-      <div className="flex-1 px-8 pt-8 flex flex-col gap-3">
-        {[1,2,3].map(i => (
-          <div key={i} className="h-24 bg-[#1d1d1d] border border-[#333] rounded-xl animate-pulse" />
-        ))}
-      </div>
+    <div className="px-8 pt-8 flex flex-col gap-3">
+      {[1,2,3].map(i => <div key={i} className="h-24 bg-[#1d1d1d] border border-[#333] rounded-xl animate-pulse" />)}
     </div>
   )
 
@@ -558,10 +607,12 @@ export default function JournalModule() {
     </div>
   )
 
+  const panelKey = panel === 'new' ? 'new' : (panel?.id || null)
+
   return (
     <div className="flex h-full overflow-hidden">
 
-      {/* ── List pane ── */}
+      {/* ── List pane ─────────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
 
         {/* Header */}
@@ -574,23 +625,16 @@ export default function JournalModule() {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowTagsManager(true)}
-                title="Управление тегами"
+              <button onClick={() => setShowMgr(true)} title="Управление тегами"
                 className="p-2 rounded-xl border border-[#2a2a2a] text-[#666] hover:text-[#f0f0f0] hover:border-[#3a3a3a] transition-colors"
-              >
-                <Tag className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setPanel('new')}
+              ><Tag className="w-4 h-4" /></button>
+              <button onClick={() => setPanel('new')}
                 className="flex items-center gap-2 px-4 py-2 bg-[#6c63ff] hover:bg-[#8b85ff] text-white text-sm font-medium rounded-xl transition-colors"
-              >
-                <Plus className="w-4 h-4" /> Запись
-              </button>
+              ><Plus className="w-4 h-4" /> Запись</button>
             </div>
           </div>
 
-          {/* Search + filter toggle */}
+          {/* Search bar */}
           <div className="flex gap-2">
             <div className="flex-1 flex items-center gap-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl px-3 py-2 focus-within:border-[#6c63ff]/40 transition-colors">
               <Search className="w-4 h-4 text-[#3a3a3a] shrink-0" />
@@ -609,15 +653,13 @@ export default function JournalModule() {
             <button
               onClick={() => setShowFilters(v => !v)}
               className={`p-2.5 rounded-xl border transition-colors ${
-                (filterTag || filterMood || filterDateFrom || filterDateTo)
+                filterTag || filterMood || filterDateFrom || filterDateTo
                   ? 'border-[#6c63ff]/50 text-[#6c63ff] bg-[#6c63ff]/10'
                   : showFilters
                     ? 'border-[#3a3a3a] text-[#f0f0f0]'
                     : 'border-[#2a2a2a] text-[#666] hover:text-[#f0f0f0] hover:border-[#3a3a3a]'
               }`}
-            >
-              <Filter className="w-4 h-4" />
-            </button>
+            ><Filter className="w-4 h-4" /></button>
           </div>
 
           {/* Filter panel */}
@@ -626,23 +668,17 @@ export default function JournalModule() {
               {/* Mood */}
               <div className="flex gap-0.5">
                 {MOODS.map(m => (
-                  <button
-                    key={m.key}
-                    title={m.label}
+                  <button key={m.key} title={m.label}
                     onClick={() => setFilterMood(filterMood === m.key ? null : m.key)}
                     className={`text-lg px-1.5 py-1 rounded-lg transition-all select-none ${
                       filterMood === m.key ? 'bg-white/10 scale-110' : 'opacity-35 hover:opacity-70'
                     }`}
-                  >
-                    {m.emoji}
-                  </button>
+                  >{m.emoji}</button>
                 ))}
               </div>
-
               {/* Tags */}
-              {tags.length > 0 && tags.map(tag => (
-                <button
-                  key={tag.id}
+              {tags.map(tag => (
+                <button key={tag.id}
                   onClick={() => setFilterTag(filterTag === tag.id ? null : tag.id)}
                   className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all"
                   style={filterTag === tag.id
@@ -653,29 +689,19 @@ export default function JournalModule() {
                   {tag.emoji} {tag.name}
                 </button>
               ))}
-
-              {/* Date range — used custom DatePicker is too heavy here, using text inputs styled consistently */}
+              {/* Date range */}
               <div className="flex items-center gap-1.5 text-xs text-[#666]">
                 <span>с</span>
-                <input
-                  type="date"
-                  value={filterDateFrom}
-                  onChange={e => setFilterDateFrom(e.target.value)}
+                <input type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)}
                   className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-1 text-xs text-[#f0f0f0] outline-none focus:border-[#6c63ff]/40 [color-scheme:dark]"
                 />
                 <span>по</span>
-                <input
-                  type="date"
-                  value={filterDateTo}
-                  onChange={e => setFilterDateTo(e.target.value)}
+                <input type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)}
                   className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-1 text-xs text-[#f0f0f0] outline-none focus:border-[#6c63ff]/40 [color-scheme:dark]"
                 />
               </div>
-
-              {hasActiveFilter && (
-                <button onClick={clearFilters} className="text-xs text-[#ef4444] hover:underline transition-colors">
-                  Сбросить
-                </button>
+              {hasFilter && (
+                <button onClick={clearFilters} className="text-xs text-[#ef4444] hover:underline">Сбросить</button>
               )}
             </div>
           )}
@@ -684,33 +710,25 @@ export default function JournalModule() {
         {/* List */}
         <div className="flex-1 overflow-y-auto px-8 py-5">
           {filtered.length === 0 ? (
-            hasActiveFilter ? (
+            hasFilter ? (
               <div className="text-center py-12">
-                <p className="text-[#666] text-sm">Нет записей по фильтру</p>
-                <button onClick={clearFilters} className="text-sm text-[#6c63ff] mt-2 hover:underline">
-                  Сбросить фильтры
-                </button>
+                <p className="text-[#666] text-sm">Ничего не найдено</p>
+                <button onClick={clearFilters} className="text-sm text-[#6c63ff] mt-2 hover:underline">Сбросить фильтры</button>
               </div>
             ) : (
               <div className="text-center py-20">
                 <BookOpen className="w-10 h-10 text-[#2a2a2a] mx-auto mb-4" />
                 <p className="text-[#f0f0f0] font-medium mb-1">Дневник пуст</p>
                 <p className="text-[#666] text-sm mb-5">Начните с первой записи</p>
-                <button
-                  onClick={() => setPanel('new')}
+                <button onClick={() => setPanel('new')}
                   className="px-4 py-2 bg-[#6c63ff] hover:bg-[#8b85ff] text-white text-sm rounded-xl transition-colors"
-                >
-                  Написать запись
-                </button>
+                >Написать запись</button>
               </div>
             )
           ) : (
             <div className="flex flex-col gap-2.5">
               {filtered.map(entry => (
-                <EntryCard
-                  key={entry.id}
-                  entry={entry}
-                  tags={tags}
+                <EntryCard key={entry.id} entry={entry} tags={tags}
                   onEdit={e => setPanel(e)}
                   onDelete={deleteEntry}
                 />
@@ -720,22 +738,25 @@ export default function JournalModule() {
         </div>
       </div>
 
-      {/* ── Editor panel ── */}
+      {/* ── Editor panel ──────────────────────────────────────────────────── */}
       {panel && (
         <EditorPanel
+          key={panelKey}
           entry={panel === 'new' ? null : panel}
           tags={tags}
+          userId={userId}
           onSave={saveEntry}
           onClose={() => setPanel(null)}
+          onTagsChange={setTags}
         />
       )}
 
-      {/* ── Tags manager modal ── */}
-      {showTagsManager && (
+      {/* ── Tags manager ──────────────────────────────────────────────────── */}
+      {showMgr && (
         <TagsManagerModal
           tags={tags}
           userId={userId}
-          onClose={() => setShowTagsManager(false)}
+          onClose={() => setShowMgr(false)}
           onTagsChange={setTags}
         />
       )}
