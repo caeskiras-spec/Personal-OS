@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import {
   Target, Play, Pause, RotateCcw, SkipForward,
-  Settings, Bell, BellOff, Trash2, AlertCircle,
+  Settings, Bell, BellOff, Trash2, AlertCircle, Info,
 } from 'lucide-react'
 import { useOS }               from '../../../lib/store'
 import { focusSessionsRepo }   from '../../../lib/db/focusSessions'
@@ -52,6 +52,47 @@ function sendBrowserNotif(title, body) {
   if (typeof window === 'undefined') return
   if (!('Notification' in window) || Notification.permission !== 'granted') return
   try { new Notification(title, { body, silent: true }) } catch { /* noop */ }
+}
+
+// ─── PomodoroHint ──────────────────────────────────────────────────────────────
+
+function PomodoroHint() {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    const close = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [open])
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        aria-label="Что такое Помодоро?"
+        aria-expanded={open}
+        onClick={() => setOpen(v => !v)}
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        className="flex items-center justify-center w-4 h-4 rounded-full text-[#444] hover:text-[#888] transition-colors"
+      >
+        <Info className="w-3.5 h-3.5" />
+      </button>
+      {open && (
+        <div
+          role="tooltip"
+          className="absolute left-0 top-6 z-50 w-72 bg-[#1a1a1a] border border-[#333] rounded-xl p-3.5 shadow-xl text-xs text-[#aaa] leading-relaxed animate-fade-in"
+        >
+          <p className="font-semibold text-[#f0f0f0] mb-1.5">Техника Помодоро</p>
+          Работа фокус-интервалами (по умолчанию 25&nbsp;мин), затем короткий перерыв (5&nbsp;мин).
+          После 4&nbsp;интервалов — длинный перерыв (15–30&nbsp;мин).
+          Помогает сохранять концентрацию и&nbsp;избегать выгорания.
+        </div>
+      )}
+    </div>
+  )
 }
 
 // ─── Ring ──────────────────────────────────────────────────────────────────────
@@ -403,7 +444,10 @@ export default function FocusModule() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-[#f0f0f0]">Фокус</h1>
-            <p className="text-[#666] text-sm mt-0.5">Техника помодоро</p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <p className="text-[#666] text-sm">Техника Помодоро</p>
+              <PomodoroHint />
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => setSoundOn(v => !v)} title={soundOn ? 'Звук вкл' : 'Звук выкл'}
