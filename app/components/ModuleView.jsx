@@ -12,6 +12,7 @@ import FinanceModule   from './modules/FinanceModule'
 import JournalModule   from './modules/JournalModule'
 import CalendarModule  from './modules/CalendarModule'
 import FocusModule     from './modules/FocusModule'
+import ProjectsModule  from './modules/ProjectsModule'
 import GenericModule   from './modules/GenericModule'
 
 const MODULE_COMPONENTS = {
@@ -24,6 +25,7 @@ const MODULE_COMPONENTS = {
   journal:   JournalModule,
   calendar:  CalendarModule,
   focus:     FocusModule,
+  projects:  ProjectsModule,
 }
 
 export default function ModuleView({ moduleId }) {
