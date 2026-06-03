@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
+import Link from 'next/link'
 import { useAuth } from '../../lib/auth'
 import { profileRepo } from '../../lib/db/profile'
 
@@ -125,6 +126,30 @@ export default function AuthScreen() {
         >
           {submitting ? 'Подождите...' : mode === 'signup' ? 'Создать аккаунт' : 'Войти'}
         </button>
+
+        {/* Forgot password — only shown on sign-in tab */}
+        {mode === 'signin' && (
+          <div className="mt-4 text-center">
+            <Link
+              href="/auth/forgot"
+              className="text-xs text-subtle hover:text-text transition-colors"
+            >
+              Забыли пароль?
+            </Link>
+          </div>
+        )}
+
+        {/* Future: Google OAuth
+        <div className="mt-5 flex items-center gap-3">
+          <div className="flex-1 h-px bg-border" />
+          <span className="text-subtle text-xs">или</span>
+          <div className="flex-1 h-px bg-border" />
+        </div>
+        <button onClick={() => signInWithOAuth('google', window.location.origin)}
+          className="mt-3 w-full flex items-center justify-center gap-2 bg-surface border border-border rounded-xl py-3 text-sm text-text hover:border-accent/40 transition-colors">
+          Войти через Google
+        </button>
+        */}
       </div>
     </div>
   )

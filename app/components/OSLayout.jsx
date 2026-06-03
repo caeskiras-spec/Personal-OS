@@ -18,7 +18,7 @@ export default function OSLayout({ children, activeRoute }) {
   const router = useRouter()
   const pathname = usePathname()
   const { session, loading } = useAuth()
-  const { activeModules, reorderModules } = useOS()
+  const { activeModules, reorderModules, userName } = useOS()
   const currentPath = activeRoute || pathname
 
   // ── drag&drop state ──────────────────────────────────────────────
@@ -165,10 +165,12 @@ export default function OSLayout({ children, activeRoute }) {
         {/* User footer */}
         <div className="mt-auto p-3 border-t border-border">
           <div className="flex items-center gap-2 px-3 py-2">
-            <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center text-xs text-accent">
-              У
+            <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center text-xs text-accent shrink-0">
+              {(userName || session?.user?.email || 'У')[0].toUpperCase()}
             </div>
-            <span className="text-subtle text-xs">Пользователь</span>
+            <span className="text-subtle text-xs truncate flex-1">
+              {userName || session?.user?.email || 'Пользователь'}
+            </span>
           </div>
         </div>
       </aside>
