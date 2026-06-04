@@ -51,6 +51,7 @@
 ## Соглашения и общие паттерны (переиспользовать!)
 - Оптимистичные обновления + состояния loading(skeleton)/empty/error везде.
 - НАШ кастомный DatePicker во всех местах выбора даты (никаких нативных пикеров). ru, неделя с Пн. Путь: app/components/modules/DatePicker.jsx.
+- НАШ кастомный Select (app/components/Select.jsx) во всех выпадающих списках — никаких нативных <select>. Поддерживает compact-режим для фильтр-баров, portal-дропдаун (фиксированное позиционирование, не клипается overflow), клавиатурную навигацию (стрелки/Enter/Esc), aria, тёмную и светлую темы через CSS-токены. Принимает options [{value,label}] или [{v,l}]; placeholder+placeholderValue для «пустого» состояния.
 - Числовые инпуты — общий стиль без нативных стрелок-спиннеров (globals.css).
 - Хитмэпы — единый компонент в стиле Привычек.
 - Эмодзи+цвет пикеры — общий стиль.
@@ -63,7 +64,7 @@
 - Toast: fixed top-4 right-4 z-50, AlertCircle, auto-dismiss 3s.
 - Skeleton: [1,2,3].map(i => <div key={i} className="h-20 bg-[#1d1d1d] border border-[#333] rounded-xl animate-pulse"/>).
 - Аналитика (/analytics): все данные грузятся один раз в AnalyticsScreen (Promise.all + safe-wrapper на каждый запрос). Переключатель периода Неделя/Месяц/Всё время — только перефильтрует уже загруженные данные (без повторных запросов). Бакеты для графиков: неделя → 7 дней, месяц → недели, всё время → 12 месяцев. MiniBarChart — CSS flex + height %, без сторонних библиотек. Ошибка одного виджета не роняет страницу (loadErr per domain). «Дней в системе» считается через supabase.auth.getUser() → user.created_at → локальная дата, (today - created) / 86400000 + 1 (включительно).
-- Главная (/home) — дашборд-сводка дня: адаптивная сетка виджетов (grid-cols-1 sm:2 lg:3). Каждый виджет самостоятелен (свой useEffect, loading/error/empty). Показываются только подключённые модули (activeModules). WIDGET_MAP: tasks, habits, focus, nutrition, sleep, finance, goals → компоненты в HomeScreen.jsx. Задачи занимают 2 колонки (sm:col-span-2). Ошибка одного виджета не роняет страницу. Быстрые действия (check task/habit) используют e.stopPropagation().
+- Главная (/home) — дашборд-сводка дня: адаптивная сетка виджетов (grid-cols-1 sm:2 lg:3). Каждый виджет самостоятелен (свой useEffect, loading/error/empty). Показываются только подключённые модули (activeModules). WIDGET_MAP покрывает ВСЕ 11 модулей: tasks, habits, focus, nutrition, sleep, finance, goals, fitness, journal, projects, calendar → компоненты в HomeScreen.jsx. Задачи занимают 2 колонки (sm:col-span-2). Ошибка одного виджета не роняет страницу. Быстрые действия (check task/habit) используют e.stopPropagation(). CalendarWidget показывает задачи с due_date на ближайшие 7 дней, сгруппированные по дате.
 - Профиль пользователя: клик на user-footer сайдбара → ProfilePanel (fixed bottom-left drawer). Поля: display_name, gender, birth_date + авто-возраст, height_cm, weight_kg, activity_level. Сохраняется через profileRepo.upsert. Задел для авто-нормы калорий (Питание).
 - Страница /modules: адаптивная сетка карточек (grid-cols-1 sm:2 lg:3 xl:4). Два раздела — «Мои модули» (активные, draggable) + каталог по категориям. Drag-and-drop через dragHappened ref (сброс через setTimeout 200ms) — не ломает клики после дропа. Карточки одинаковой высоты через min-h + flex flex-col + mt-auto для кнопок.
 

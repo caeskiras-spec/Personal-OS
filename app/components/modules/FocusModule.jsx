@@ -11,6 +11,7 @@ import { profileRepo }         from '../../../lib/db/profile'
 import { tasksRepo }           from '../../../lib/db/tasks'
 import { projectsRepo }        from '../../../lib/db/projects'
 import { getSessionsToday, getSessionsThisWeek, sumMinutes } from '../../../lib/focus-selectors'
+import Select from '../Select'
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -559,22 +560,26 @@ export default function FocusModule() {
           {projects.length > 0 && (
             <div className="flex items-center gap-3">
               <span className="text-xs text-text-7 w-16 shrink-0">Проект</span>
-              <select value={projectId || ''} onChange={e => setProjectId(e.target.value || null)}
-                className="flex-1 bg-surface border border-border rounded-xl px-3 py-2 text-sm text-text outline-none focus:border-[#6c63ff]/40 transition-colors"
-              >
-                <option value="">— не выбрано —</option>
-                {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
+              <Select
+                value={projectId || ''}
+                onChange={v => setProjectId(v || null)}
+                options={projects.map(p => ({ value: p.id, label: p.name }))}
+                placeholder="— не выбрано —"
+                placeholderValue=""
+                className="flex-1"
+              />
             </div>
           )}
           <div className="flex items-center gap-3">
             <span className="text-xs text-text-7 w-16 shrink-0">Задача</span>
-            <select value={taskId || ''} onChange={e => setTaskId(e.target.value || null)}
-              className="flex-1 bg-surface border border-border rounded-xl px-3 py-2 text-sm text-text outline-none focus:border-[#6c63ff]/40 transition-colors"
-            >
-              <option value="">— не выбрано —</option>
-              {activeTasks.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
-            </select>
+            <Select
+              value={taskId || ''}
+              onChange={v => setTaskId(v || null)}
+              options={activeTasks.map(t => ({ value: t.id, label: t.title }))}
+              placeholder="— не выбрано —"
+              placeholderValue=""
+              className="flex-1"
+            />
           </div>
         </div>
 

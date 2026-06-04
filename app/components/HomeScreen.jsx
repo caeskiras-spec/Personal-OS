@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, ChevronRight, Plus, AlertCircle } from 'lucide-react'
 import { useOS }                    from '../../lib/store'
@@ -15,6 +15,9 @@ import { transactionsRepo }         from '../../lib/db/transactions'
 import { goalsRepo }                from '../../lib/db/goals'
 import { goalMilestonesRepo }       from '../../lib/db/goalMilestones'
 import { profileRepo }              from '../../lib/db/profile'
+import { workoutsRepo }             from '../../lib/db/workouts'
+import { journalRepo }              from '../../lib/db/journal'
+import { projectsRepo }             from '../../lib/db/projects'
 import { getTodayAndOverdue, getTodayStr } from '../../lib/tasks-selectors'
 import { isScheduledToday }         from '../../lib/habits-selectors'
 import { getSessionsToday, sumMinutes } from '../../lib/focus-selectors'
@@ -572,6 +575,255 @@ function GoalsWidget() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// WIDGET: FITNESS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function FitnessWidget() {
+  const { userId } = useOS()
+  const [workouts, setWorkouts] = useState([])
+  const [loading,  setLoading]  = useState(true)
+  const [error,    setError]    = useState(false)
+
+  useEffect(() => {
+    if (!userId) return
+    workoutsRepo.list(userId)
+      .then(setWorkouts)
+      .catch(() => setError(true))
+      .finally(() => setLoading(false))
+  }, [userId])
+
+  const weekRange = useMemo(() => {
+    const today = new Date()
+    const diff  = today.getDay() === 0 ? 6 : today.getDay() - 1
+    const mon   = new Date(today); mon.setDate(today.getDate() - diff)
+    const sun   = new Date(mon);  sun.setDate(mon.getDate() + 6)
+    const fmt   = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+    return { mon: fmt(mon), sun: fmt(sun) }
+  }, [])
+
+  const weekWorkouts = workouts.filter(w => w.date >= weekRange.mon && w.date <= weekRange.sun)
+  const last         = workouts[0] ?? null
+
+  return (
+    <WidgetCard modId="fitness" title="Тренировки" badge={loading ? '' : `${weekWorkouts.length} на неделе`}>
+      {loading ? <WidgetSkeleton rows={2} /> : error ? <WidgetError /> : (
+        <>
+          {weekWorkouts.length === 0 && !last ? (
+            <WidgetEmpty msg="Тренировок нет" modId="fitness" />
+          ) : (
+            <>
+              <div className="flex items-end gap-2">
+                <span className="text-2xl font-bold text-text">{weekWorkouts.length}</span>
+                <span className="text-xs text-text-6 mb-0.5">тренировок на неделе</span>
+              </div>
+              {last && (
+                <p className="text-[10px] text-text-7 mt-1">
+                  Последняя: {last.typeEmoji} {last.typeName}
+                  {' · '}
+                  {new Date(last.date + 'T00:00:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                </p>
+              )}
+            </>
+          )}
+        </>
+      )}
+    </WidgetCard>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// WIDGET: JOURNAL
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const MOOD_EMOJI = { awful: '😞', bad: '😔', ok: '😐', good: '🙂', great: '😄', amazing: '🤩' }
+
+function JournalWidget() {
+  const { userId } = useOS()
+  const router = useRouter()
+  const [entries, setEntries] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error,   setError]   = useState(false)
+
+  useEffect(() => {
+    if (!userId) return
+    journalRepo.list(userId)
+      .then(setEntries)
+      .catch(() => setError(true))
+      .finally(() => setLoading(false))
+  }, [userId])
+
+  const last     = entries[0] ?? null
+  const todayStr = getTodayStr()
+  const hasToday = last?.date === todayStr
+
+  return (
+    <WidgetCard modId="journal" title="Дневник">
+      {loading ? <WidgetSkeleton rows={2} /> : error ? <WidgetError /> : (
+        <>
+          {!last ? (
+            <WidgetEmpty msg="Записей нет" modId="journal" />
+          ) : (
+            <>
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-text-2 truncate leading-snug">
+                    {last.title || 'Без заголовка'}
+                  </p>
+                  <p className="text-[10px] text-text-7 mt-0.5">
+                    {new Date(last.date + 'T00:00:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                  </p>
+                </div>
+                {last.mood && (
+                  <span className="text-base leading-none shrink-0">{MOOD_EMOJI[last.mood] ?? ''}</span>
+                )}
+              </div>
+              {!hasToday && (
+                <button
+                  onClick={e => { e.stopPropagation(); router.push('/modules/journal') }}
+                  className="mt-2 flex items-center gap-1 text-[10px] text-[#6c63ff] hover:text-[#8b85ff] transition-colors"
+                >
+                  <Plus className="w-2.5 h-2.5" /> Написать сегодня
+                </button>
+              )}
+            </>
+          )}
+        </>
+      )}
+    </WidgetCard>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// WIDGET: PROJECTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function ProjectsWidget() {
+  const { userId } = useOS()
+  const [projects, setProjects] = useState([])
+  const [tasks,    setTasks]    = useState([])
+  const [loading,  setLoading]  = useState(true)
+  const [error,    setError]    = useState(false)
+
+  useEffect(() => {
+    if (!userId) return
+    Promise.all([projectsRepo.list(userId), tasksRepo.list(userId)])
+      .then(([p, t]) => { setProjects(p); setTasks(t) })
+      .catch(() => setError(true))
+      .finally(() => setLoading(false))
+  }, [userId])
+
+  const active      = projects.filter(p => p.status === 'active')
+  const activeShown = active.slice(0, 3)
+
+  return (
+    <WidgetCard modId="projects" title="Проекты" badge={loading ? '' : `${active.length} активных`}>
+      {loading ? <WidgetSkeleton rows={2} /> : error ? <WidgetError /> : (
+        <>
+          {activeShown.length === 0 ? (
+            <WidgetEmpty msg="Нет активных проектов" modId="projects" />
+          ) : (
+            <div className="flex flex-col gap-2.5">
+              {activeShown.map(proj => {
+                const projTasks = tasks.filter(t => t.project_id === proj.id)
+                const done  = projTasks.filter(t => t.status === 'done').length
+                const total = projTasks.length
+                const pct   = total > 0 ? Math.round(done / total * 100) : 0
+                return (
+                  <div key={proj.id} className="flex items-center gap-2.5">
+                    <span className="text-base leading-none shrink-0">{proj.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <span className="text-xs text-text-2 truncate">{proj.name}</span>
+                        {total > 0 && <span className="text-[10px] text-text-7 shrink-0">{done}/{total}</span>}
+                      </div>
+                      {total > 0 && <ProgressBar pct={pct} color={proj.color} />}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </>
+      )}
+    </WidgetCard>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// WIDGET: CALENDAR
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function CalendarWidget() {
+  const { userId } = useOS()
+  const [tasks,   setTasks]   = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error,   setError]   = useState(false)
+
+  useEffect(() => {
+    if (!userId) return
+    tasksRepo.list(userId)
+      .then(setTasks)
+      .catch(() => setError(true))
+      .finally(() => setLoading(false))
+  }, [userId])
+
+  const todayStr = getTodayStr()
+
+  const upcoming = useMemo(() => {
+    const end = new Date(); end.setDate(end.getDate() + 6)
+    const endStr = `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}`
+    const filtered = tasks
+      .filter(t => t.due_date && t.due_date >= todayStr && t.due_date <= endStr && t.status !== 'done')
+      .sort((a, b) => a.due_date.localeCompare(b.due_date))
+    const grouped = []
+    let curDate = null
+    for (const t of filtered) {
+      if (t.due_date !== curDate) { grouped.push({ date: t.due_date, items: [] }); curDate = t.due_date }
+      grouped[grouped.length - 1].items.push(t)
+    }
+    return grouped.slice(0, 4)
+  }, [tasks, todayStr])
+
+  const fmtDate = (d) => {
+    if (d === todayStr) return 'Сегодня'
+    return new Date(d + 'T00:00:00').toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' })
+  }
+
+  return (
+    <WidgetCard modId="calendar" title="Календарь">
+      {loading ? <WidgetSkeleton rows={3} /> : error ? <WidgetError /> : (
+        <>
+          {upcoming.length === 0 ? (
+            <div className="flex items-center gap-2 py-1">
+              <span className="text-xs text-text-7">Нет предстоящих событий</span>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2.5">
+              {upcoming.map(({ date, items }) => (
+                <div key={date}>
+                  <p className="text-[9px] uppercase tracking-widest text-text-8 mb-1">{fmtDate(date)}</p>
+                  <div className="flex flex-col gap-0.5">
+                    {items.slice(0, 3).map(t => (
+                      <div key={t.id} className="flex items-center gap-1.5 px-0.5">
+                        <span className="w-1 h-1 rounded-full bg-[#0891b2] shrink-0" />
+                        <span className="text-xs text-text-3 truncate">{t.title}</span>
+                      </div>
+                    ))}
+                    {items.length > 3 && (
+                      <p className="text-[10px] text-text-7 pl-2">ещё {items.length - 3}...</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </WidgetCard>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // WIDGET MAP
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -583,6 +835,10 @@ const WIDGET_MAP = {
   sleep:     SleepWidget,
   finance:   FinanceWidget,
   goals:     GoalsWidget,
+  fitness:   FitnessWidget,
+  journal:   JournalWidget,
+  projects:  ProjectsWidget,
+  calendar:  CalendarWidget,
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

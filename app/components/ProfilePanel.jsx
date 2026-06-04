@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { X, LogOut, Check, AlertCircle, Loader2 } from 'lucide-react'
 import ThemeSwitcher from './ThemeSwitcher'
+import Select from './Select'
 import { useOS } from '../../lib/store'
 import { useAuth } from '../../lib/auth'
 import { profileRepo } from '../../lib/db/profile'
@@ -66,16 +67,17 @@ function NumberInput({ value, onChange, placeholder, min, max, unit }) {
 }
 
 function SelectInput({ value, onChange, options }) {
+  // First option with value '' acts as placeholder
+  const [emptyOpt, ...rest] = options
+  const hasEmpty = emptyOpt?.value === ''
   return (
-    <select
+    <Select
       value={value}
-      onChange={e => onChange(e.target.value)}
-      className="w-full bg-bg-2 border border-border rounded-lg px-3 py-2 text-sm text-text outline-none focus:border-[#6c63ff]/40 transition-colors appearance-none cursor-pointer"
-    >
-      {options.map(o => (
-        <option key={o.value} value={o.value}>{o.label}</option>
-      ))}
-    </select>
+      onChange={onChange}
+      options={hasEmpty ? rest : options}
+      placeholder={hasEmpty ? emptyOpt.label : undefined}
+      placeholderValue=""
+    />
   )
 }
 

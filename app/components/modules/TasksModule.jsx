@@ -11,6 +11,7 @@ import { subtasksRepo } from '../../../lib/db/subtasks'
 import { projectsRepo, PROJECT_COLORS } from '../../../lib/db/projects'
 import { groupTasks, formatDueDate, isOverdue, calculateNextDueDate, getTodayStr } from '../../../lib/tasks-selectors'
 import DatePicker from './DatePicker'
+import Select from '../Select'
 import InlineSubtaskList from './InlineSubtaskList'
 import TagChips from './TagChips'
 
@@ -84,16 +85,14 @@ function SegmentedGroup({ options, value, onChange, canDeselect = true }) {
 
 function CompactSelect({ value, onChange, options, placeholder }) {
   return (
-    <select
+    <Select
       value={value}
-      onChange={e => onChange(e.target.value)}
-      className="bg-surface border border-border rounded-lg px-2.5 py-1.5 text-xs text-subtle outline-none focus:border-accent/60 cursor-pointer transition-colors hover:text-text"
-    >
-      {placeholder && <option value="all">{placeholder}</option>}
-      {options.map(({ v, l }) => (
-        <option key={v} value={v}>{l}</option>
-      ))}
-    </select>
+      onChange={onChange}
+      options={options}
+      placeholder={placeholder}
+      placeholderValue="all"
+      compact
+    />
   )
 }
 
@@ -268,14 +267,13 @@ function ProjectSelect({ value, onChange, projects, onCreateProject }) {
 
   return (
     <div className="flex flex-col gap-1.5">
-      <select
+      <Select
         value={value || ''}
-        onChange={e => onChange(e.target.value || null)}
-        className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-text outline-none focus:border-accent/60 transition-colors"
-      >
-        <option value="">Без проекта</option>
-        {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-      </select>
+        onChange={v => onChange(v || null)}
+        options={projects.map(p => ({ value: p.id, label: p.name }))}
+        placeholder="Без проекта"
+        placeholderValue=""
+      />
 
       {!showCreate ? (
         <button type="button" onClick={() => setShowCreate(true)}
@@ -435,15 +433,12 @@ function EditPanel({
 
         <div className="flex flex-col gap-1">
           <span className="text-[10px] text-subtle uppercase tracking-wider">Повторение</span>
-          <select
+          <Select
             value={fields.recurrence}
-            onChange={e => onChange({ ...fields, recurrence: e.target.value })}
-            className="bg-surface border border-border rounded-lg px-2.5 py-1.5 text-xs text-text outline-none focus:border-accent/60 transition-colors"
-          >
-            {Object.entries(RECURRENCE_LABELS).map(([k, l]) => (
-              <option key={k} value={k}>{l}</option>
-            ))}
-          </select>
+            onChange={v => onChange({ ...fields, recurrence: v })}
+            options={Object.entries(RECURRENCE_LABELS).map(([value, label]) => ({ value, label }))}
+            compact
+          />
         </div>
       </div>
 
