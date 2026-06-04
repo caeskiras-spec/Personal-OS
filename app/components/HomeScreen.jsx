@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronRight, Plus, AlertCircle } from 'lucide-react'
+import { Check, ChevronRight, ChevronLeft, Plus, AlertCircle } from 'lucide-react'
 import { useOS }                    from '../../lib/store'
 import { MODULE_ICONS }             from '../../lib/moduleIcons'
 import { tasksRepo }                from '../../lib/db/tasks'
@@ -18,6 +18,10 @@ import { profileRepo }              from '../../lib/db/profile'
 import { workoutsRepo }             from '../../lib/db/workouts'
 import { journalRepo }              from '../../lib/db/journal'
 import { projectsRepo }             from '../../lib/db/projects'
+import {
+  normalizeTaskEvents, normalizeHabitEvents, normalizeWorkoutEvents, buildDayMap,
+} from '../../lib/calendar-selectors'
+import CompactMonthCalendar, { MONTHS, getMonthCells } from './MonthCalendar'
 import { getTodayAndOverdue, getTodayStr } from '../../lib/tasks-selectors'
 import { isScheduledToday }         from '../../lib/habits-selectors'
 import { getSessionsToday, sumMinutes } from '../../lib/focus-selectors'
@@ -63,7 +67,7 @@ function WidgetCard({ modId, title, badge, children, className = '' }) {
   return (
     <div
       onClick={() => router.push(`/modules/${modId}`)}
-      className={`bg-card border border-border-2 rounded-xl flex flex-col gap-3 p-4 cursor-pointer hover:bg-surface-2 hover:border-border-hover transition-all ${className}`}
+      className={`h-full bg-card border border-border-2 rounded-xl flex flex-col gap-2 p-4 cursor-pointer hover:bg-surface-2 hover:border-border-hover transition-all ${className}`}
     >
       {/* header */}
       <div className="flex items-center justify-between shrink-0">
@@ -82,8 +86,8 @@ function WidgetCard({ modId, title, badge, children, className = '' }) {
           <ChevronRight className="w-3 h-3 text-text-9" />
         </div>
       </div>
-      {/* content */}
-      <div className="flex-1" onClick={e => e.stopPropagation()}>
+      {/* content — min-h-0 allows flex shrinking; overflow-hidden clips to fixed height */}
+      <div className="flex-1 min-h-0 overflow-hidden" onClick={e => e.stopPropagation()}>
         {children}
       </div>
     </div>
@@ -750,74 +754,102 @@ function ProjectsWidget() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// WIDGET: CALENDAR
+// WIDGET: CALENDAR — compact month grid mirroring the Calendar module
 // ═══════════════════════════════════════════════════════════════════════════════
+
+const MONTHS_SHORT = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек']
 
 function CalendarWidget() {
   const { userId } = useOS()
-  const [tasks,   setTasks]   = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState(false)
+  const router = useRouter()
+
+  const [tasks,       setTasks]       = useState([])
+  const [habits,      setHabits]      = useState([])
+  const [completions, setCompletions] = useState({})
+  const [workouts,    setWorkouts]    = useState([])
+  const [loading,     setLoading]     = useState(true)
+  const [error,       setError]       = useState(false)
+  const [current,     setCurrent]     = useState(() => new Date())
 
   useEffect(() => {
     if (!userId) return
-    tasksRepo.list(userId)
-      .then(setTasks)
-      .catch(() => setError(true))
-      .finally(() => setLoading(false))
+    async function load() {
+      try {
+        const [tList, hList, wList] = await Promise.all([
+          tasksRepo.list(userId),
+          habitsRepo.list(userId),
+          workoutsRepo.list(userId),
+        ])
+        setTasks(tList); setHabits(hList); setWorkouts(wList)
+        if (hList.length > 0) {
+          const comp = await habitCompletionsRepo.listAllByHabits(userId, hList.map(h => h.id))
+          setCompletions(comp)
+        }
+      } catch { setError(true) }
+      finally { setLoading(false) }
+    }
+    load()
   }, [userId])
 
-  const todayStr = getTodayStr()
+  const today = getTodayStr()
 
-  const upcoming = useMemo(() => {
-    const end = new Date(); end.setDate(end.getDate() + 6)
-    const endStr = `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}`
-    const filtered = tasks
-      .filter(t => t.due_date && t.due_date >= todayStr && t.due_date <= endStr && t.status !== 'done')
-      .sort((a, b) => a.due_date.localeCompare(b.due_date))
-    const grouped = []
-    let curDate = null
-    for (const t of filtered) {
-      if (t.due_date !== curDate) { grouped.push({ date: t.due_date, items: [] }); curDate = t.due_date }
-      grouped[grouped.length - 1].items.push(t)
-    }
-    return grouped.slice(0, 4)
-  }, [tasks, todayStr])
+  const dayMap = useMemo(() => buildDayMap([
+    ...normalizeTaskEvents(tasks),
+    ...normalizeHabitEvents(habits, completions),
+    ...normalizeWorkoutEvents(workouts),
+  ]), [tasks, habits, completions, workouts])
 
-  const fmtDate = (d) => {
-    if (d === todayStr) return 'Сегодня'
-    return new Date(d + 'T00:00:00').toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' })
+  const year  = current.getFullYear()
+  const month = current.getMonth()
+
+  const navigate = (dir, e) => {
+    e.stopPropagation()
+    setCurrent(prev => { const d = new Date(prev); d.setMonth(d.getMonth() + dir); return d })
   }
+
+  const goToday = (e) => { e.stopPropagation(); setCurrent(new Date()) }
+
+  // Compact skeleton: weekday row + 5 week rows
+  const CalSkeleton = () => (
+    <div className="flex flex-col gap-0.5 h-full">
+      <div className="grid grid-cols-7 gap-px mb-0.5">
+        {Array.from({length: 7}).map((_,i) => <div key={i} className="h-3 bg-surface-2 rounded animate-pulse" />)}
+      </div>
+      {Array.from({length: 5}).map((_,i) => (
+        <div key={i} className="grid grid-cols-7 gap-px">
+          {Array.from({length: 7}).map((_,j) => <div key={j} className="h-9 bg-surface-2 rounded-md animate-pulse" />)}
+        </div>
+      ))}
+    </div>
+  )
 
   return (
     <WidgetCard modId="calendar" title="Календарь">
-      {loading ? <WidgetSkeleton rows={3} /> : error ? <WidgetError /> : (
-        <>
-          {upcoming.length === 0 ? (
-            <div className="flex items-center gap-2 py-1">
-              <span className="text-xs text-text-7">Нет предстоящих событий</span>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2.5">
-              {upcoming.map(({ date, items }) => (
-                <div key={date}>
-                  <p className="text-[9px] uppercase tracking-widest text-text-8 mb-1">{fmtDate(date)}</p>
-                  <div className="flex flex-col gap-0.5">
-                    {items.slice(0, 3).map(t => (
-                      <div key={t.id} className="flex items-center gap-1.5 px-0.5">
-                        <span className="w-1 h-1 rounded-full bg-[#0891b2] shrink-0" />
-                        <span className="text-xs text-text-3 truncate">{t.title}</span>
-                      </div>
-                    ))}
-                    {items.length > 3 && (
-                      <p className="text-[10px] text-text-7 pl-2">ещё {items.length - 3}...</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </>
+      {loading ? <CalSkeleton /> : error ? <WidgetError /> : (
+        <div className="h-full flex flex-col gap-1.5">
+          {/* Month navigation */}
+          <div className="flex items-center justify-between shrink-0">
+            <button onClick={e => navigate(-1, e)} className="p-0.5 rounded text-text-7 hover:text-text transition-colors">
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={goToday} className="text-[10px] text-text-6 hover:text-[#6c63ff] transition-colors font-medium">
+              {MONTHS_SHORT[month]} {year}
+            </button>
+            <button onClick={e => navigate(1, e)} className="p-0.5 rounded text-text-7 hover:text-text transition-colors">
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          {/* Compact month grid */}
+          <div className="flex-1 min-h-0">
+            <CompactMonthCalendar
+              year={year}
+              month={month}
+              dayMap={dayMap}
+              today={today}
+              onDayClick={() => router.push('/modules/calendar')}
+            />
+          </div>
+        </div>
       )}
     </WidgetCard>
   )
@@ -880,12 +912,23 @@ export default function HomeScreen() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 auto-rows-min">
+        /* Adaptive auto-layout grid:
+           - 4 cols on desktop, 2 on tablet, 1 on mobile
+           - All normal widgets: 1×1 cells (uniform 160px height)
+           - Calendar widget: 2 cols × 2 rows (prominently larger)
+           - grid-auto-flow: dense fills gaps when modules are disabled */
+        <div
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
+          style={{ gridAutoFlow: 'dense', gridAutoRows: '160px' }}
+        >
           {widgetModules.map(id => {
             const W = WIDGET_MAP[id]
-            const isWide = id === 'tasks'
+            const isCalendar = id === 'calendar'
             return (
-              <div key={id} className={isWide ? 'sm:col-span-2 lg:col-span-2' : ''}>
+              <div
+                key={id}
+                className={isCalendar ? 'sm:col-span-2 row-span-2' : ''}
+              >
                 <W />
               </div>
             )

@@ -2,17 +2,19 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
+import { Home, LayoutGrid, BarChart3, Settings } from 'lucide-react'
 import { useAuth } from '../../lib/auth'
 import { useOS } from '../../lib/store'
 import { getModuleById } from '../../lib/modules'
 import { MODULE_ICONS } from '../../lib/moduleIcons'
 import ProfilePanel from './ProfilePanel'
 
+// Nav items styled like module icons: each has its own accent color
 const NAV_ITEMS = [
-  { path: '/home',      icon: '⌂', label: 'Главная'   },
-  { path: '/modules',   icon: '⊞', label: 'Модули'    },
-  { path: '/analytics', icon: '◈', label: 'Аналитика' },
-  { path: '/settings',  icon: '⚙', label: 'Настройки' },
+  { path: '/home',      Icon: Home,        color: '#6c63ff', label: 'Главная'   },
+  { path: '/modules',   Icon: LayoutGrid,  color: '#0891b2', label: 'Модули'    },
+  { path: '/analytics', Icon: BarChart3,   color: '#22c55e', label: 'Аналитика' },
+  { path: '/settings',  Icon: Settings,    color: '#f59e0b', label: 'Настройки' },
 ]
 
 export default function OSLayout({ children, activeRoute }) {
@@ -92,20 +94,30 @@ export default function OSLayout({ children, activeRoute }) {
 
         {/* Fixed nav items */}
         <nav className="flex flex-col p-3 gap-0.5">
-          {NAV_ITEMS.map(item => (
-            <button
-              key={item.path}
-              onClick={() => router.push(item.path)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${
-                currentPath === item.path
-                  ? 'bg-accent/15 text-accent'
-                  : 'text-subtle hover:text-text hover:bg-surface'
-              }`}
-            >
-              <span className="text-base w-5 text-center">{item.icon}</span>
-              {item.label}
-            </button>
-          ))}
+          {NAV_ITEMS.map(item => {
+            const isActive = currentPath === item.path
+            return (
+              <button
+                key={item.path}
+                onClick={() => router.push(item.path)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left ${
+                  isActive ? '' : 'text-subtle hover:text-text hover:bg-muted/10'
+                }`}
+                style={isActive ? { color: item.color, backgroundColor: item.color + '18' } : {}}
+              >
+                <div
+                  className="w-5 h-5 rounded flex items-center justify-center shrink-0 transition-all"
+                  style={isActive
+                    ? { background: item.color + '25', color: item.color }
+                    : { color: 'var(--color-text-6)' }
+                  }
+                >
+                  <item.Icon className="w-3.5 h-3.5" />
+                </div>
+                {item.label}
+              </button>
+            )
+          })}
         </nav>
 
         {/* Draggable modules */}

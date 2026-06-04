@@ -21,13 +21,10 @@ import {
   normalizeFinanceEvents,
   buildDayMap,
 } from '../../../lib/calendar-selectors'
-
-// ─── locale constants (same as DatePicker) ────────────────────────────────────
-
-const MONTHS      = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь']
-const MONTHS_G    = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря']
-const WEEKDAYS    = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс']
-const WEEKDAYS_F  = ['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье']
+import {
+  MONTHS, MONTHS_G, WEEKDAYS, WEEKDAYS_F,
+  localStr, getWeekStart, getWeekDays, getMonthCells,
+} from '../MonthCalendar'
 
 const LAYERS = [
   { key: 'tasks',     label: 'Задачи',     color: '#6c63ff' },
@@ -42,40 +39,7 @@ const TYPE_LABEL = { task: 'Задачи', habit: 'Привычки', workout: '
 const TYPE_COLOR = { task: '#6c63ff', habit: '#8b85ff', workout: '#22c55e', nutrition: '#10b981', sleep: '#3b82f6', finance: '#f59e0b' }
 const TYPE_ORDER = ['task', 'habit', 'workout', 'nutrition', 'sleep', 'finance']
 
-// ─── date helpers (no UTC bugs, same pattern as tasks-selectors) ───────────────
-
-function localStr(d) {
-  const y  = d.getFullYear()
-  const m  = String(d.getMonth() + 1).padStart(2, '0')
-  const da = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${da}`
-}
-
-function getWeekStart(date) {
-  const d   = new Date(date)
-  const dow = d.getDay()
-  d.setDate(d.getDate() + (dow === 0 ? -6 : 1 - dow))  // snap to Monday
-  return d
-}
-
-function getWeekDays(date) {
-  const start = getWeekStart(date)
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(start)
-    d.setDate(start.getDate() + i)
-    return d
-  })
-}
-
-function getMonthCells(year, month) {
-  const firstDow = (new Date(year, month, 1).getDay() + 6) % 7  // Mon = 0
-  const lastDay  = new Date(year, month + 1, 0).getDate()
-  const cells    = []
-  for (let i = 0; i < firstDow; i++) cells.push(null)
-  for (let d = 1; d <= lastDay; d++) cells.push(new Date(year, month, d))
-  while (cells.length % 7 !== 0) cells.push(null)
-  return cells
-}
+// ─── date helpers ─────────────────────────────────────────────────────────────
 
 function fmtShortDate(date) {
   return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
