@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useMemo } from 'react'
 import { AlertCircle, BarChart2 } from 'lucide-react'
@@ -94,14 +94,14 @@ function fmtMoney(n) {
 function AnalyticsCard({ modId, title, children }) {
   const mi = MODULE_ICONS[modId]
   return (
-    <div className="bg-[#1d1d1d] border border-[#333] rounded-xl p-5 flex flex-col gap-4">
+    <div className="bg-card border border-border-2 rounded-xl p-5 flex flex-col gap-4">
       <div className="flex items-center gap-2">
         {mi && (
           <div className="w-5 h-5 rounded flex items-center justify-center" style={{ background: mi.color+'20' }}>
             <mi.Icon className="w-3 h-3" style={{ color: mi.color }} />
           </div>
         )}
-        <span className="text-[11px] font-semibold text-[#666] uppercase tracking-wider">{title}</span>
+        <span className="text-[11px] font-semibold text-subtle uppercase tracking-wider">{title}</span>
       </div>
       {children}
     </div>
@@ -112,10 +112,10 @@ function StatGrid({ stats }) {
   return (
     <div className={`grid gap-3 ${stats.length <= 2 ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-4'}`}>
       {stats.map(({ label, value, sub, color }) => (
-        <div key={label} className="bg-[#161616] border border-[#252525] rounded-xl px-3 py-3">
-          <p className="text-[10px] text-[#444] mb-1">{label}</p>
-          <p className="text-xl font-bold" style={{ color: color || '#f0f0f0' }}>{value}</p>
-          {sub && <p className="text-[10px] text-[#444] mt-0.5">{sub}</p>}
+        <div key={label} className="bg-surface-3 border border-surface-3 rounded-xl px-3 py-3">
+          <p className="text-[10px] text-text-7 mb-1">{label}</p>
+          <p className="text-xl font-bold" style={{ color: color || 'rgb(var(--text-rgb))' }}>{value}</p>
+          {sub && <p className="text-[10px] text-text-7 mt-0.5">{sub}</p>}
         </div>
       ))}
     </div>
@@ -145,7 +145,7 @@ function MiniBarChart({ data, color = '#6c63ff', unit = '', showLabels = true })
         <div className="flex gap-1">
           {data.map((d, i) => (
             <div key={i} className="flex-1 text-center">
-              <span className="text-[8px] text-[#333]">{d.label}</span>
+              <span className="text-[8px] text-text-8">{d.label}</span>
             </div>
           ))}
         </div>
@@ -159,11 +159,11 @@ function ProgressBar({ pct, color = '#6c63ff', label }) {
     <div className="flex flex-col gap-1">
       {label && (
         <div className="flex justify-between items-center">
-          <span className="text-[10px] text-[#555] truncate max-w-[160px]">{label}</span>
-          <span className="text-[10px] text-[#444]">{pct}%</span>
+          <span className="text-[10px] text-text-6 truncate max-w-[160px]">{label}</span>
+          <span className="text-[10px] text-text-7">{pct}%</span>
         </div>
       )}
-      <div className="h-1.5 bg-[#222] rounded-full overflow-hidden">
+      <div className="h-1.5 bg-surface-2 rounded-full overflow-hidden">
         <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, pct)}%`, background: color }} />
       </div>
     </div>
@@ -172,13 +172,13 @@ function ProgressBar({ pct, color = '#6c63ff', label }) {
 
 function EmptyState({ text }) {
   return (
-    <p className="text-xs text-[#444] text-center py-3">{text || 'Недостаточно данных'}</p>
+    <p className="text-xs text-text-7 text-center py-3">{text || 'Недостаточно данных'}</p>
   )
 }
 
 function WidgetError() {
   return (
-    <div className="flex items-center gap-2 text-[11px] text-[#555] py-2">
+    <div className="flex items-center gap-2 text-[11px] text-text-6 py-2">
       <AlertCircle className="w-3.5 h-3.5 text-[#ef4444]/60 shrink-0" />не удалось загрузить
     </div>
   )
@@ -188,7 +188,7 @@ function WidgetSkeleton() {
   return (
     <div className="flex flex-col gap-2">
       {[80, 60, 90].map((w, i) => (
-        <div key={i} className="h-6 bg-[#222] rounded animate-pulse" style={{ width: `${w}%` }} />
+        <div key={i} className="h-6 bg-surface-2 rounded animate-pulse" style={{ width: `${w}%` }} />
       ))}
     </div>
   )
@@ -398,7 +398,7 @@ function FitnessWidget({ workouts, buckets, range }) {
         <div className="flex flex-wrap gap-1.5">
           {types.map(w => (
             <span key={w.typeName}
-              className="flex items-center gap-1 px-2 py-0.5 bg-[#161616] border border-[#252525] rounded-full text-[10px] text-[#888]"
+              className="flex items-center gap-1 px-2 py-0.5 bg-surface-3 border border-surface-3 rounded-full text-[10px] text-text-4"
             >
               <span>{w.typeEmoji}</span>{w.typeName}
             </span>
@@ -448,13 +448,13 @@ function FinanceWidget({ transactions, categories, buckets, range }) {
       <MiniBarChart data={netBarData} color="#f59e0b" />
       {topCats.length > 0 && (
         <div className="flex flex-col gap-1.5">
-          <p className="text-[10px] text-[#333] uppercase tracking-wider">Топ расходы</p>
+          <p className="text-[10px] text-text-8 uppercase tracking-wider">Топ расходы</p>
           {topCats.map(([catId, total]) => {
             const cat = categories.find(c => c.id === catId)
             return (
               <div key={catId} className="flex items-center justify-between">
-                <span className="text-[11px] text-[#888]">{cat ? `${cat.emoji} ${cat.name}` : 'Прочее'}</span>
-                <span className="text-[11px] text-[#555]">{fmtMoney(total)} ₽</span>
+                <span className="text-[11px] text-text-4">{cat ? `${cat.emoji} ${cat.name}` : 'Прочее'}</span>
+                <span className="text-[11px] text-text-6">{fmtMoney(total)} ₽</span>
               </div>
             )
           })}
@@ -481,10 +481,10 @@ function GoalsWidget({ goals, milestones }) {
           return (
             <div key={goal.id} className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-[#ccc] truncate">{goal.icon} {goal.title}</span>
-                <span className="text-[10px] text-[#555] shrink-0 ml-2">{pct}%</span>
+                <span className="text-xs text-text-2 truncate">{goal.icon} {goal.title}</span>
+                <span className="text-[10px] text-text-6 shrink-0 ml-2">{pct}%</span>
               </div>
-              <div className="h-1.5 bg-[#222] rounded-full overflow-hidden">
+              <div className="h-1.5 bg-surface-2 rounded-full overflow-hidden">
                 <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: goal.color || '#8b5cf6' }} />
               </div>
             </div>
@@ -573,38 +573,38 @@ export default function AnalyticsScreen() {
     <div className="p-6 sm:p-8 max-w-6xl mx-auto animate-fade-in">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#f0f0f0]">Аналитика</h1>
-        <p className="text-[#555] text-sm mt-1">Прогресс по вашим активностям</p>
+        <h1 className="text-2xl font-bold text-text">Аналитика</h1>
+        <p className="text-text-6 text-sm mt-1">Прогресс по вашим активностям</p>
       </div>
 
       {activeModules.length === 0 ? (
-        <div className="bg-[#1d1d1d] border border-[#333] rounded-xl p-10 text-center">
-          <p className="text-[#555] text-sm">Добавьте модули для отображения аналитики</p>
+        <div className="bg-card border border-border-2 rounded-xl p-10 text-center">
+          <p className="text-text-6 text-sm">Добавьте модули для отображения аналитики</p>
         </div>
       ) : (
         <div className="flex flex-col gap-6">
 
           {/* Top stats */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-[#1d1d1d] border border-[#333] rounded-xl p-5">
-              <p className="text-[10px] uppercase tracking-widest text-[#444] mb-2">Активных модулей</p>
+            <div className="bg-card border border-border-2 rounded-xl p-5">
+              <p className="text-[10px] uppercase tracking-widest text-text-7 mb-2">Активных модулей</p>
               <p className="text-4xl font-bold text-[#6c63ff]">{activeModules.length}</p>
             </div>
-            <div className="bg-[#1d1d1d] border border-[#333] rounded-xl p-5">
-              <p className="text-[10px] uppercase tracking-widest text-[#444] mb-2">Дней в системе</p>
+            <div className="bg-card border border-border-2 rounded-xl p-5">
+              <p className="text-[10px] uppercase tracking-widest text-text-7 mb-2">Дней в системе</p>
               {daysInSys === null
-                ? <div className="h-10 w-16 bg-[#222] rounded animate-pulse" />
-                : <p className="text-4xl font-bold text-[#f0f0f0]">{daysInSys}</p>
+                ? <div className="h-10 w-16 bg-surface-2 rounded animate-pulse" />
+                : <p className="text-4xl font-bold text-text">{daysInSys}</p>
               }
             </div>
           </div>
 
           {/* Period selector */}
-          <div className="flex gap-1 bg-[#111] rounded-xl p-1">
+          <div className="flex gap-1 bg-bg-2 rounded-xl p-1">
             {PERIOD_TABS.map(t => (
               <button key={t.key} onClick={() => setPeriod(t.key)}
                 className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${
-                  period === t.key ? 'bg-[#2a2a2a] text-[#f0f0f0]' : 'text-[#555] hover:text-[#f0f0f0]'
+                  period === t.key ? 'bg-muted text-text' : 'text-text-6 hover:text-text'
                 }`}
               >{t.label}</button>
             ))}
@@ -614,7 +614,7 @@ export default function AnalyticsScreen() {
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {[1,2,3,4,5,6].map(i => (
-                <div key={i} className={`bg-[#1d1d1d] border border-[#333] rounded-xl p-5 ${i <= 2 ? 'sm:col-span-2 lg:col-span-1' : ''}`}>
+                <div key={i} className={`bg-card border border-border-2 rounded-xl p-5 ${i <= 2 ? 'sm:col-span-2 lg:col-span-1' : ''}`}>
                   <WidgetSkeleton />
                 </div>
               ))}

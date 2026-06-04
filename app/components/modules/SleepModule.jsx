@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
@@ -39,7 +39,7 @@ async function connectWatch() { return { status: 'in_development' } }
 // ─── Toast ────────────────────────────────────────────────────────────────────
 function Toast({ msg, onClose }) {
   return (
-    <div className="fixed top-4 right-4 z-50 flex items-center gap-3 bg-[#1d1d1d] border border-[#333] rounded-xl px-4 py-3 shadow-lg animate-slide-up">
+    <div className="fixed top-4 right-4 z-50 flex items-center gap-3 bg-card border border-border-2 rounded-xl px-4 py-3 shadow-lg animate-slide-up">
       <AlertCircle className="w-4 h-4 text-warning shrink-0" />
       <span className="text-sm text-text">{msg}</span>
       <button onClick={onClose} className="text-subtle hover:text-text ml-1"><X className="w-3 h-3" /></button>
@@ -119,7 +119,7 @@ function SleepCalendar({ datesWithEntries, selectedDate, onSelectDate }) {
   }, [viewing])
 
   return (
-    <div className="bg-[#1d1d1d] border border-[#333] rounded-xl p-4 select-none shrink-0" style={{ width: 220 }}>
+    <div className="bg-card border border-border-2 rounded-xl p-4 select-none shrink-0" style={{ width: 220 }}>
       <p className="text-[10px] text-subtle uppercase tracking-wider mb-3">Календарь</p>
       <div className="flex items-center justify-between mb-2">
         <button type="button" onClick={prevMonth} className="p-1 text-subtle hover:text-text transition-colors rounded">
@@ -203,7 +203,7 @@ function SleepForm({ selectedDate, onAdd, onClose }) {
   }
 
   return (
-    <div className="bg-[#1d1d1d] border border-[#333] rounded-xl p-4 animate-slide-up">
+    <div className="bg-card border border-border-2 rounded-xl p-4 animate-slide-up">
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm font-medium text-text">Новая запись</span>
         <button onClick={onClose} className="text-subtle hover:text-text transition-colors"><X className="w-4 h-4" /></button>
@@ -219,12 +219,12 @@ function SleepForm({ selectedDate, onAdd, onClose }) {
         <div className="flex items-center gap-3">
           <span className="text-xs text-subtle w-16 shrink-0">Лёг</span>
           <input type="time" value={f.bedtime} onChange={e => set('bedtime', e.target.value)}
-            className="bg-bg border border-[#333] rounded-lg px-2 py-1.5 text-xs text-text outline-none focus:border-[#3b82f6]/50 transition-colors"
+            className="bg-bg border border-border-2 rounded-lg px-2 py-1.5 text-xs text-text outline-none focus:border-[#3b82f6]/50 transition-colors"
           />
           <span className="text-xs text-subtle">→</span>
           <span className="text-xs text-subtle w-16 shrink-0">Встал</span>
           <input type="time" value={f.wakeTime} onChange={e => set('wakeTime', e.target.value)}
-            className="bg-bg border border-[#333] rounded-lg px-2 py-1.5 text-xs text-text outline-none focus:border-[#3b82f6]/50 transition-colors"
+            className="bg-bg border border-border-2 rounded-lg px-2 py-1.5 text-xs text-text outline-none focus:border-[#3b82f6]/50 transition-colors"
           />
         </div>
 
@@ -245,7 +245,7 @@ function SleepForm({ selectedDate, onAdd, onClose }) {
         {/* Notes */}
         <textarea value={f.notes} onChange={e => set('notes', e.target.value)}
           placeholder="Заметки (необязательно)" rows={2}
-          className="w-full bg-bg border border-[#333] rounded-lg px-3 py-2 text-sm text-text outline-none focus:border-[#3b82f6]/50 transition-colors resize-none placeholder:text-subtle"
+          className="w-full bg-bg border border-border-2 rounded-lg px-3 py-2 text-sm text-text outline-none focus:border-[#3b82f6]/50 transition-colors resize-none placeholder:text-subtle"
         />
 
         <div className="flex gap-2 pt-1">
@@ -284,7 +284,7 @@ function SleepCard({ entry, onRemove, onUpdate }) {
   const setEfField = (k, v) => setEf(p => ({ ...p, [k]: v }))
 
   return (
-    <div className="bg-[#1d1d1d] border border-[#333] rounded-xl overflow-hidden transition-all hover:border-[#3f3f3f]">
+    <div className="bg-card border border-border-2 rounded-xl overflow-hidden transition-all hover:border-border-hover">
       {/* Card header */}
       <div
         className="flex items-center gap-3 px-4 py-3 cursor-pointer"
@@ -320,7 +320,7 @@ function SleepCard({ entry, onRemove, onUpdate }) {
 
       {/* Expanded: edit form or read-only detail */}
       {expanded && !editing && (
-        <div className="px-4 pb-3 border-t border-[#2a2a2a] pt-3 animate-slide-up">
+        <div className="px-4 pb-3 border-t border-border pt-3 animate-slide-up">
           {entry.notes && <p className="text-xs text-subtle mb-2">{entry.notes}</p>}
           <button onClick={startEdit} className="text-xs transition-colors hover:opacity-80" style={{ color: SLEEP_COLOR }}>
             Редактировать
@@ -328,15 +328,15 @@ function SleepCard({ entry, onRemove, onUpdate }) {
         </div>
       )}
       {expanded && editing && ef && (
-        <form onSubmit={saveEdit} className="px-4 pb-3 border-t border-[#2a2a2a] pt-3 flex flex-col gap-2 animate-slide-up">
+        <form onSubmit={saveEdit} className="px-4 pb-3 border-t border-border pt-3 flex flex-col gap-2 animate-slide-up">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[10px] text-subtle">Лёг</span>
             <input type="time" value={ef.bedtime} onChange={e => setEfField('bedtime', e.target.value)}
-              className="bg-bg border border-[#333] rounded px-2 py-1 text-xs text-text outline-none focus:border-[#3b82f6]/50"
+              className="bg-bg border border-border-2 rounded px-2 py-1 text-xs text-text outline-none focus:border-[#3b82f6]/50"
             />
             <span className="text-[10px] text-subtle">Встал</span>
             <input type="time" value={ef.wakeTime} onChange={e => setEfField('wakeTime', e.target.value)}
-              className="bg-bg border border-[#333] rounded px-2 py-1 text-xs text-text outline-none focus:border-[#3b82f6]/50"
+              className="bg-bg border border-border-2 rounded px-2 py-1 text-xs text-text outline-none focus:border-[#3b82f6]/50"
             />
             {calcDuration(ef.bedtime, ef.wakeTime) > 0 && (
               <span className="text-xs font-semibold" style={{ color: SLEEP_COLOR }}>{fmtDuration(calcDuration(ef.bedtime, ef.wakeTime))}</span>
@@ -347,7 +347,7 @@ function SleepCard({ entry, onRemove, onUpdate }) {
             <QualityStars value={ef.quality} onChange={v => setEfField('quality', v)} />
           </div>
           <textarea value={ef.notes} onChange={e => setEfField('notes', e.target.value)} rows={2} placeholder="Заметки"
-            className="w-full bg-bg border border-[#333] rounded-lg px-2 py-1.5 text-xs text-text outline-none resize-none placeholder:text-subtle focus:border-[#3b82f6]/50"
+            className="w-full bg-bg border border-border-2 rounded-lg px-2 py-1.5 text-xs text-text outline-none resize-none placeholder:text-subtle focus:border-[#3b82f6]/50"
           />
           <div className="flex gap-2">
             <button type="submit" className="px-3 py-1.5 text-xs rounded-lg transition-colors" style={{ backgroundColor: SLEEP_COLOR + '25', color: SLEEP_COLOR }}>Сохранить</button>
@@ -363,9 +363,9 @@ function SleepCard({ entry, onRemove, onUpdate }) {
 function LoadingSkeleton() {
   return (
     <div className="flex gap-6 p-8">
-      <div className="w-[220px] shrink-0 h-64 bg-[#1d1d1d] border border-[#333] rounded-xl animate-pulse" />
+      <div className="w-[220px] shrink-0 h-64 bg-card border border-border-2 rounded-xl animate-pulse" />
       <div className="flex-1 flex flex-col gap-4">
-        {[1,2,3].map(i => <div key={i} className="h-20 bg-[#1d1d1d] border border-[#333] rounded-xl animate-pulse" />)}
+        {[1,2,3].map(i => <div key={i} className="h-20 bg-card border border-border-2 rounded-xl animate-pulse" />)}
       </div>
     </div>
   )
@@ -488,7 +488,7 @@ export default function SleepModule() {
 
           {/* Watch stub */}
           <button type="button" onClick={handleWatch}
-            className="flex items-center gap-2 w-full px-3 py-2.5 bg-[#1d1d1d] border border-[#333] hover:border-[#3f3f3f] rounded-xl text-subtle hover:text-text transition-all"
+            className="flex items-center gap-2 w-full px-3 py-2.5 bg-card border border-border-2 hover:border-border-hover rounded-xl text-subtle hover:text-text transition-all"
           >
             <Watch className="w-4 h-4 shrink-0" />
             <span className="flex-1 text-left text-xs">Подключить к часам</span>
@@ -500,7 +500,7 @@ export default function SleepModule() {
         <div className="flex-1 min-w-0 flex flex-col gap-4">
 
           {/* Stats card */}
-          <div className="bg-[#1d1d1d] border border-[#333] rounded-xl p-4">
+          <div className="bg-card border border-border-2 rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-medium text-subtle uppercase tracking-wider">{dateLabel}</span>
               <SleepGoalWidget goalMinutes={goalMinutes} onSave={saveGoal} />
@@ -551,7 +551,7 @@ export default function SleepModule() {
             />
           ) : (
             <button onClick={() => setShowForm(true)}
-              className="flex items-center gap-2 px-4 py-3 bg-[#1d1d1d] border border-dashed border-[#333] hover:border-[#3b82f6]/40 hover:bg-[#3b82f6]/5 rounded-xl text-sm text-subtle hover:text-text transition-all"
+              className="flex items-center gap-2 px-4 py-3 bg-card border border-dashed border-border-2 hover:border-[#3b82f6]/40 hover:bg-[#3b82f6]/5 rounded-xl text-sm text-subtle hover:text-text transition-all"
             >
               <Plus className="w-4 h-4" />
               Добавить запись сна

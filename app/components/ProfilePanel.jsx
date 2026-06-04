@@ -1,7 +1,8 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { X, LogOut, User, Check, AlertCircle, Loader2 } from 'lucide-react'
+import { X, LogOut, Check, AlertCircle, Loader2 } from 'lucide-react'
+import ThemeSwitcher from './ThemeSwitcher'
 import { useOS } from '../../lib/store'
 import { useAuth } from '../../lib/auth'
 import { profileRepo } from '../../lib/db/profile'
@@ -27,7 +28,7 @@ function clamp(val, min, max) {
 // ─── Field components ──────────────────────────────────────────────────────────
 
 function Label({ children }) {
-  return <p className="text-[10px] text-[#444] mb-1.5">{children}</p>
+  return <p className="text-[10px] text-text-7 mb-1.5">{children}</p>
 }
 
 function TextInput({ value, onChange, placeholder, maxLength }) {
@@ -37,7 +38,7 @@ function TextInput({ value, onChange, placeholder, maxLength }) {
       onChange={e => onChange(e.target.value)}
       placeholder={placeholder}
       maxLength={maxLength}
-      className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-[#f0f0f0] outline-none focus:border-[#6c63ff]/40 placeholder:text-[#333] transition-colors"
+      className="w-full bg-bg-2 border border-border rounded-lg px-3 py-2 text-sm text-text outline-none focus:border-[#6c63ff]/40 placeholder:text-text-8 transition-colors"
     />
   )
 }
@@ -53,10 +54,10 @@ function NumberInput({ value, onChange, placeholder, min, max, unit }) {
         placeholder={placeholder}
         min={min}
         max={max}
-        className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-[#f0f0f0] outline-none focus:border-[#6c63ff]/40 placeholder:text-[#333] transition-colors pr-10"
+        className="w-full bg-bg-2 border border-border rounded-lg px-3 py-2 text-sm text-text outline-none focus:border-[#6c63ff]/40 placeholder:text-text-8 transition-colors pr-10"
       />
       {unit && (
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#444] pointer-events-none">
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-text-7 pointer-events-none">
           {unit}
         </span>
       )}
@@ -69,8 +70,7 @@ function SelectInput({ value, onChange, options }) {
     <select
       value={value}
       onChange={e => onChange(e.target.value)}
-      className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-[#f0f0f0] outline-none focus:border-[#6c63ff]/40 transition-colors appearance-none cursor-pointer"
-      style={{ colorScheme: 'dark' }}
+      className="w-full bg-bg-2 border border-border rounded-lg px-3 py-2 text-sm text-text outline-none focus:border-[#6c63ff]/40 transition-colors appearance-none cursor-pointer"
     >
       {options.map(o => (
         <option key={o.value} value={o.value}>{o.label}</option>
@@ -179,22 +179,22 @@ export default function ProfilePanel({ onClose }) {
       />
 
       {/* Panel */}
-      <div className="fixed bottom-0 left-0 z-50 w-72 bg-[#141414] border-r border-t border-[#1e1e1e] rounded-tr-2xl flex flex-col max-h-[90vh] shadow-2xl">
+      <div className="fixed bottom-0 left-0 z-50 w-72 bg-panel border-r border-t border-border-1 rounded-tr-2xl flex flex-col max-h-[90vh] shadow-2xl">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#1e1e1e] shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border-1 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-[#6c63ff]/20 flex items-center justify-center text-sm font-bold text-[#6c63ff]">
               {initials}
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-[#f0f0f0] truncate leading-tight">
+              <p className="text-sm font-semibold text-text truncate leading-tight">
                 {displayName || 'Профиль'}
               </p>
-              <p className="text-[10px] text-[#555] truncate">{email}</p>
+              <p className="text-[10px] text-text-6 truncate">{email}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-[#555] hover:text-[#f0f0f0] hover:bg-white/5 transition-colors shrink-0">
+          <button onClick={onClose} className="p-1.5 rounded-lg text-text-6 hover:text-text hover:bg-muted/10 transition-colors shrink-0">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -204,28 +204,34 @@ export default function ProfilePanel({ onClose }) {
 
           {loading ? (
             <div className="flex flex-col gap-3 pt-2">
-              {[1,2,3,4].map(i => <div key={i} className="h-9 bg-[#1d1d1d] border border-[#2a2a2a] rounded-lg animate-pulse" />)}
+              {[1,2,3,4].map(i => <div key={i} className="h-9 bg-card border border-border rounded-lg animate-pulse" />)}
             </div>
           ) : (
             <>
               {/* ── Аккаунт ────────────────────────────────────────────── */}
               <section>
-                <p className="text-[10px] uppercase tracking-widest text-[#333] mb-3">Аккаунт</p>
-                <div className="bg-[#1a1a1a] border border-[#222] rounded-xl px-3 py-2.5 mb-2">
-                  <p className="text-[10px] text-[#444] mb-0.5">Email</p>
-                  <p className="text-sm text-[#888] truncate">{email}</p>
+                <p className="text-[10px] uppercase tracking-widest text-text-8 mb-3">Аккаунт</p>
+                <div className="bg-surface border border-surface-2 rounded-xl px-3 py-2.5 mb-2">
+                  <p className="text-[10px] text-text-7 mb-0.5">Email</p>
+                  <p className="text-sm text-text-4 truncate">{email}</p>
                 </div>
                 <button
                   onClick={signOut}
-                  className="w-full flex items-center justify-center gap-2 py-2 text-sm text-[#ef4444]/80 hover:text-[#ef4444] border border-[#ef4444]/15 hover:border-[#ef4444]/35 hover:bg-[#ef4444]/5 rounded-xl transition-colors"
+                  className="w-full flex items-center justify-center gap-2 py-2 text-sm text-danger/80 hover:text-danger border border-danger/15 hover:border-danger/35 hover:bg-danger/5 rounded-xl transition-colors"
                 >
                   <LogOut className="w-3.5 h-3.5" /> Выйти
                 </button>
               </section>
 
+              {/* ── Тема ─────────────────────────────────────────── */}
+              <section>
+                <p className="text-[10px] uppercase tracking-widest text-text-8 mb-3">Тема</p>
+                <ThemeSwitcher compact />
+              </section>
+
               {/* ── Профиль ─────────────────────────────────────────────── */}
               <section>
-                <p className="text-[10px] uppercase tracking-widest text-[#333] mb-3">Профиль</p>
+                <p className="text-[10px] uppercase tracking-widest text-text-8 mb-3">Профиль</p>
                 <div className="flex flex-col gap-3.5">
 
                   {/* Display name */}
@@ -245,7 +251,7 @@ export default function ProfilePanel({ onClose }) {
                     <Label>
                       Дата рождения
                       {age !== null && (
-                        <span className="ml-2 text-[#555]">· {age} лет</span>
+                        <span className="ml-2 text-text-6">· {age} лет</span>
                       )}
                     </Label>
                     <DatePicker value={birthDate} onChange={setBirthDate} />
@@ -277,7 +283,7 @@ export default function ProfilePanel({ onClose }) {
 
         {/* Footer: save */}
         {!loading && (
-          <div className="px-5 py-4 border-t border-[#1e1e1e] shrink-0">
+          <div className="px-5 py-4 border-t border-border-1 shrink-0">
             {error && (
               <div className="flex items-center gap-2 text-[11px] text-[#ef4444] mb-3">
                 <AlertCircle className="w-3.5 h-3.5 shrink-0" />

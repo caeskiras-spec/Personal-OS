@@ -34,9 +34,19 @@
 - focus_sessions (date, type focus/break/long_break, duration_minutes, task_id, project_id, completed)
 - goals (progress_type percent/numeric/milestones, progress, current_value, target_value, unit, status active/completed/archived, deadline, color, icon, linked_project_ids jsonb, linked_task_ids jsonb, linked_habit_ids jsonb)
 - goal_milestones (goal_id→goals, title, done, position), goal_categories
-- user_profiles (calorie_goal, protein_goal, carbs_goal, fat_goal, sleep_goal_minutes, focus_goal_minutes, focus_work_minutes, focus_break_minutes, focus_long_break_minutes, focus_cycles_before_long, workout_weekly_goal, onboarding_completed, display_name, gender [male|female|other], birth_date [text YYYY-MM-DD], height_cm, weight_kg, activity_level [low|medium|high]) — миграция 0017
+- user_profiles (calorie_goal, protein_goal, carbs_goal, fat_goal, sleep_goal_minutes, focus_goal_minutes, focus_work_minutes, focus_break_minutes, focus_long_break_minutes, focus_cycles_before_long, workout_weekly_goal, onboarding_completed, display_name, gender [male|female|other], birth_date [text YYYY-MM-DD], height_cm, weight_kg, activity_level [low|medium|high], theme [dark|light|system DEFAULT 'system']) — миграции 0017, 0019
 - user_modules (module_id text, is_active, position int — порядок модулей в сайдбаре)
 - auth.users (Supabase Auth)
+
+## Темизация (ВАЖНО — не хардкодить цвета!)
+- Тема применяется через `data-theme="dark|light"` на `<html>`. 3 режима: dark/light/system. Переключатель: Settings + ProfilePanel. Выбор хранится в localStorage (основной, предотвращает FOUC) + `user_profiles.theme` (кросс-девайс, миграция 0019).
+- Анти-FOUC: инлайн-скрипт в app/layout.js читает localStorage ДО гидрации и выставляет data-theme.
+- Все цвета — через CSS-переменные (`--color-*`) или Tailwind-токены, **NO хардкода серых hex**.
+- RGB-токены (поддержка opacity-модификаторов): `bg`, `surface`, `muted`, `subtle`, `text`, `border` → `rgb(var(--xxx-rgb) / <alpha>)`. Пример: `bg-muted/30` работает.
+- Простые hex-токены: `card`, `panel`, `bg-2`, `surface-2`, `surface-3`, `border-1`, `border-2`, `border-hover`, `text-2`…`text-9` → `var(--color-*)`.
+- Акцентные цвета (accent, success, warning, danger) — фиксированные hex, не меняются между темами.
+- Правило: НЕ использовать `bg-[#xxx]`, `text-[#xxx]`, `border-[#xxx]` для серых/нейтральных. Всегда токен.
+- ThemeProvider: `app/components/ThemeProvider.jsx` + `lib/theme.js` (useTheme hook). Используй `useTheme()` для чтения/смены темы.
 
 ## Соглашения и общие паттерны (переиспользовать!)
 - Оптимистичные обновления + состояния loading(skeleton)/empty/error везде.

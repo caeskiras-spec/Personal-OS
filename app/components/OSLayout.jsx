@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
@@ -141,7 +141,7 @@ export default function OSLayout({ children, activeRoute }) {
                           ? 'bg-accent/10 text-accent-light outline outline-1 -outline-offset-1 outline-accent/40'
                           : isActive
                             ? 'bg-accent/15 text-accent'
-                            : 'text-text/70 hover:text-text hover:bg-white/5'
+                            : 'text-text/70 hover:text-text hover:bg-muted/10'
                       }
                     `}
                   >
@@ -172,7 +172,7 @@ export default function OSLayout({ children, activeRoute }) {
         <div className="mt-auto p-3 border-t border-border">
           <button
             onClick={() => setProfileOpen(true)}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors text-left group"
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted/10 transition-colors text-left group"
           >
             <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center text-xs text-accent shrink-0 group-hover:bg-accent/30 transition-colors">
               {(userName || session?.user?.email || 'У')[0].toUpperCase()}

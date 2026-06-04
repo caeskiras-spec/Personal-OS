@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
@@ -29,13 +29,13 @@ const STATUS_TABS = [
 function ProgressBar({ pct, color, done, total }) {
   return (
     <div className="flex items-center gap-2">
-      <div className="flex-1 h-1.5 bg-[#222] rounded-full overflow-hidden">
+      <div className="flex-1 h-1.5 bg-surface-2 rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all"
           style={{ width: `${pct}%`, background: color }}
         />
       </div>
-      <span className="text-[10px] text-[#555] shrink-0 tabular-nums">{done}/{total}</span>
+      <span className="text-[10px] text-text-6 shrink-0 tabular-nums">{done}/{total}</span>
     </div>
   )
 }
@@ -62,7 +62,7 @@ function IconPicker({ value, onChange }) {
     <div className="flex flex-wrap gap-1">
       {PROJECT_ICONS.map(em => (
         <button key={em} type="button" onClick={() => onChange(em)}
-          className={`text-base px-1.5 py-1 rounded-lg transition-all ${value === em ? 'bg-[#2a2a2a] scale-110' : 'hover:bg-[#1a1a1a]'}`}
+          className={`text-base px-1.5 py-1 rounded-lg transition-all ${value === em ? 'bg-muted scale-110' : 'hover:bg-surface'}`}
         >{em}</button>
       ))}
     </div>
@@ -79,10 +79,10 @@ function ProjectCard({ project, tasks, isSelected, onSelect, onStatusChange, onD
   return (
     <div
       onClick={() => !confirmDelete && onSelect(project)}
-      className={`bg-[#1d1d1d] border rounded-xl p-4 cursor-pointer transition-all group ${
+      className={`bg-card border rounded-xl p-4 cursor-pointer transition-all group ${
         isSelected
-          ? 'border-[#6c63ff]/60 bg-[#1d1d24]'
-          : 'border-[#333] hover:bg-[#222] hover:border-[#3f3f3f]'
+          ? 'border-[#6c63ff]/60 bg-card-selected'
+          : 'border-border-2 hover:bg-surface-2 hover:border-border-hover'
       }`}
     >
       {/* Header */}
@@ -95,42 +95,42 @@ function ProjectCard({ project, tasks, isSelected, onSelect, onStatusChange, onD
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="text-sm font-semibold text-[#f0f0f0] truncate">{project.name}</h3>
+            <h3 className="text-sm font-semibold text-text truncate">{project.name}</h3>
             {/* Actions */}
             <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
               onClick={e => e.stopPropagation()}
             >
               {confirmDelete ? (
                 <>
-                  <button onClick={() => setConfirmDelete(false)} className="text-[10px] text-[#666] px-1.5 py-1 rounded hover:bg-white/5">Нет</button>
+                  <button onClick={() => setConfirmDelete(false)} className="text-[10px] text-subtle px-1.5 py-1 rounded hover:bg-muted/10">Нет</button>
                   <button onClick={() => onDelete(project.id)} className="text-[10px] text-[#ef4444] px-1.5 py-1 rounded hover:bg-red-500/10">Удалить</button>
                 </>
               ) : (
                 <>
                   {project.status === 'active' && (
                     <button onClick={() => onStatusChange(project.id, 'completed')} title="Завершить"
-                      className="p-1 rounded hover:bg-white/5 text-[#555] hover:text-[#22c55e] transition-colors"
+                      className="p-1 rounded hover:bg-muted/10 text-text-6 hover:text-[#22c55e] transition-colors"
                     ><Check className="w-3.5 h-3.5" /></button>
                   )}
                   {project.status === 'active' && (
                     <button onClick={() => onStatusChange(project.id, 'archived')} title="Архивировать"
-                      className="p-1 rounded hover:bg-white/5 text-[#555] hover:text-[#666] transition-colors"
+                      className="p-1 rounded hover:bg-muted/10 text-text-6 hover:text-subtle transition-colors"
                     ><Archive className="w-3.5 h-3.5" /></button>
                   )}
                   {(project.status === 'completed' || project.status === 'archived') && (
                     <button onClick={() => onStatusChange(project.id, 'active')} title="Вернуть в активные"
-                      className="p-1 rounded hover:bg-white/5 text-[#555] hover:text-[#6c63ff] transition-colors"
+                      className="p-1 rounded hover:bg-muted/10 text-text-6 hover:text-[#6c63ff] transition-colors"
                     ><RotateCcw className="w-3.5 h-3.5" /></button>
                   )}
                   <button onClick={() => setConfirmDelete(true)}
-                    className="p-1 rounded hover:bg-red-500/10 text-[#555] hover:text-[#ef4444] transition-colors"
+                    className="p-1 rounded hover:bg-red-500/10 text-text-6 hover:text-[#ef4444] transition-colors"
                   ><Trash2 className="w-3.5 h-3.5" /></button>
                 </>
               )}
             </div>
           </div>
           {project.description && (
-            <p className="text-[11px] text-[#555] mt-0.5 line-clamp-1">{project.description}</p>
+            <p className="text-[11px] text-text-6 mt-0.5 line-clamp-1">{project.description}</p>
           )}
         </div>
       </div>
@@ -146,7 +146,7 @@ function ProjectCard({ project, tasks, isSelected, onSelect, onStatusChange, onD
           </>
         )}
         <div className="flex items-center justify-between">
-          <span className="text-[10px] text-[#444]">{total} {total === 1 ? 'задача' : total < 5 ? 'задачи' : 'задач'}</span>
+          <span className="text-[10px] text-text-7">{total} {total === 1 ? 'задача' : total < 5 ? 'задачи' : 'задач'}</span>
           {dl && (
             <span className="text-[10px] font-medium" style={{ color: dl.color }}>{dl.label}</span>
           )}
@@ -161,18 +161,18 @@ function ProjectCard({ project, tasks, isSelected, onSelect, onStatusChange, onD
 function TaskRow({ task, onToggle }) {
   return (
     <div
-      className={`flex items-center gap-2.5 py-2 px-3 rounded-lg transition-colors hover:bg-[#1a1a1a] cursor-pointer group ${task.done ? 'opacity-50' : ''}`}
+      className={`flex items-center gap-2.5 py-2 px-3 rounded-lg transition-colors hover:bg-surface cursor-pointer group ${task.done ? 'opacity-50' : ''}`}
       onClick={() => onToggle(task.id, task.done)}
     >
       {task.done
         ? <CheckCircle2 className="w-4 h-4 shrink-0 text-[#22c55e]" />
-        : <Circle className="w-4 h-4 shrink-0 text-[#333] group-hover:text-[#555] transition-colors" />
+        : <Circle className="w-4 h-4 shrink-0 text-text-8 group-hover:text-text-6 transition-colors" />
       }
-      <span className={`text-sm flex-1 min-w-0 truncate ${task.done ? 'line-through text-[#555]' : 'text-[#f0f0f0]'}`}>
+      <span className={`text-sm flex-1 min-w-0 truncate ${task.done ? 'line-through text-text-6' : 'text-text'}`}>
         {task.title}
       </span>
       {task.due_date && (
-        <span className={`text-[10px] shrink-0 ${task.due_date < localStr() && !task.done ? 'text-[#ef4444]' : 'text-[#444]'}`}>
+        <span className={`text-[10px] shrink-0 ${task.due_date < localStr() && !task.done ? 'text-[#ef4444]' : 'text-text-7'}`}>
           {task.due_date}
         </span>
       )}
@@ -213,20 +213,20 @@ function DetailPanel({ project, tasks, userId, onClose, onUpdate, onDelete, onTa
   }
 
   return (
-    <div className="w-[400px] shrink-0 border-l border-[#1a1a1a] bg-[#141414] flex flex-col h-full overflow-hidden">
+    <div className="w-[400px] shrink-0 border-l border-surface bg-panel flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-[#1e1e1e] shrink-0">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border-1 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center text-base shrink-0"
             style={{ background: project.color + '22' }}
           >{project.icon}</div>
-          <span className="text-sm font-semibold text-[#f0f0f0] truncate">{project.name}</span>
+          <span className="text-sm font-semibold text-text truncate">{project.name}</span>
         </div>
         <div className="flex items-center gap-1 shrink-0">
           <button onClick={() => setEditing(v => !v)}
-            className={`p-1.5 rounded-lg transition-colors ${editing ? 'bg-[#2a2a2a] text-[#f0f0f0]' : 'text-[#555] hover:text-[#f0f0f0] hover:bg-white/5'}`}
+            className={`p-1.5 rounded-lg transition-colors ${editing ? 'bg-muted text-text' : 'text-text-6 hover:text-text hover:bg-muted/10'}`}
           ><Edit2 className="w-3.5 h-3.5" /></button>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-[#555] hover:text-[#f0f0f0] hover:bg-white/5 transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-lg text-text-6 hover:text-text hover:bg-muted/10 transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -235,9 +235,9 @@ function DetailPanel({ project, tasks, userId, onClose, onUpdate, onDelete, onTa
       <div className="flex-1 overflow-y-auto flex flex-col gap-4 px-5 py-4">
         {/* Progress */}
         {total > 0 && (
-          <div className="bg-[#1a1a1a] border border-[#222] rounded-xl p-4">
+          <div className="bg-surface border border-surface-2 rounded-xl p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-[#666]">Прогресс</span>
+              <span className="text-xs text-subtle">Прогресс</span>
               <span className="text-sm font-bold" style={{ color: project.color }}>{pct}%</span>
             </div>
             <ProgressBar pct={pct} color={project.color} done={done} total={total} />
@@ -247,30 +247,30 @@ function DetailPanel({ project, tasks, userId, onClose, onUpdate, onDelete, onTa
 
         {/* Edit form */}
         {editing && (
-          <div className="bg-[#1a1a1a] border border-[#222] rounded-xl p-4 flex flex-col gap-3 animate-slide-up">
+          <div className="bg-surface border border-surface-2 rounded-xl p-4 flex flex-col gap-3 animate-slide-up">
             <input value={name} onChange={e => setName(e.target.value)}
               placeholder="Название проекта"
-              className="bg-transparent border-b border-[#2a2a2a] focus:border-[#6c63ff]/40 pb-1.5 text-sm font-medium text-[#f0f0f0] outline-none placeholder:text-[#3a3a3a] transition-colors"
+              className="bg-transparent border-b border-border focus:border-[#6c63ff]/40 pb-1.5 text-sm font-medium text-text outline-none placeholder:text-muted transition-colors"
             />
             <textarea value={desc} onChange={e => setDesc(e.target.value)}
               placeholder="Описание (необязательно)"
               rows={2}
-              className="bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs text-[#f0f0f0] outline-none resize-none focus:border-[#6c63ff]/40 placeholder:text-[#3a3a3a] transition-colors"
+              className="bg-bg-2 border border-border rounded-lg px-3 py-2 text-xs text-text outline-none resize-none focus:border-[#6c63ff]/40 placeholder:text-muted transition-colors"
             />
             <div>
-              <p className="text-[10px] text-[#444] mb-1.5">Иконка</p>
+              <p className="text-[10px] text-text-7 mb-1.5">Иконка</p>
               <IconPicker value={icon} onChange={setIcon} />
             </div>
             <div>
-              <p className="text-[10px] text-[#444] mb-1.5">Цвет</p>
+              <p className="text-[10px] text-text-7 mb-1.5">Цвет</p>
               <ColorPicker value={color} onChange={setColor} />
             </div>
             <div>
-              <p className="text-[10px] text-[#444] mb-1.5">Дедлайн</p>
+              <p className="text-[10px] text-text-7 mb-1.5">Дедлайн</p>
               <DatePicker value={deadline} onChange={setDeadline} noOverdue />
             </div>
             <div className="flex gap-2 pt-1">
-              <button onClick={() => setEditing(false)} className="flex-1 py-2 text-xs text-[#666] border border-[#2a2a2a] rounded-xl hover:border-[#333] transition-colors">
+              <button onClick={() => setEditing(false)} className="flex-1 py-2 text-xs text-subtle border border-border rounded-xl hover:border-border-2 transition-colors">
                 Отмена
               </button>
               <button onClick={save} disabled={!name.trim() || saving}
@@ -282,15 +282,15 @@ function DetailPanel({ project, tasks, userId, onClose, onUpdate, onDelete, onTa
 
         {/* Description (read mode) */}
         {!editing && project.description && (
-          <p className="text-xs text-[#555] leading-relaxed">{project.description}</p>
+          <p className="text-xs text-text-6 leading-relaxed">{project.description}</p>
         )}
 
         {/* Tasks */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] text-[#3a3a3a] uppercase tracking-widest">Задачи</p>
+            <p className="text-[10px] text-muted uppercase tracking-widest">Задачи</p>
             <button onClick={() => setAddingTask(v => !v)}
-              className="flex items-center gap-1 text-[10px] text-[#555] hover:text-[#6c63ff] transition-colors"
+              className="flex items-center gap-1 text-[10px] text-text-6 hover:text-[#6c63ff] transition-colors"
             >
               <Plus className="w-3 h-3" /> Добавить
             </button>
@@ -307,7 +307,7 @@ function DetailPanel({ project, tasks, userId, onClose, onUpdate, onDelete, onTa
                   if (e.key === 'Escape') { setAddingTask(false); setNewTask('') }
                 }}
                 placeholder="Название задачи..."
-                className="flex-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs text-[#f0f0f0] outline-none focus:border-[#6c63ff]/40 placeholder:text-[#3a3a3a] transition-colors"
+                className="flex-1 bg-surface border border-border rounded-lg px-3 py-2 text-xs text-text outline-none focus:border-[#6c63ff]/40 placeholder:text-muted transition-colors"
               />
               <button onClick={addTask} disabled={!newTask.trim()}
                 className="px-3 py-2 bg-[#6c63ff] hover:bg-[#8b85ff] text-white rounded-lg text-xs transition-colors disabled:opacity-40"
@@ -316,7 +316,7 @@ function DetailPanel({ project, tasks, userId, onClose, onUpdate, onDelete, onTa
           )}
 
           {linked.length === 0 ? (
-            <p className="text-xs text-[#3a3a3a] text-center py-4">Нет задач — добавьте первую</p>
+            <p className="text-xs text-muted text-center py-4">Нет задач — добавьте первую</p>
           ) : (
             <div className="flex flex-col">
               {/* Active tasks first */}
@@ -355,10 +355,10 @@ function CreatePanel({ userId, onSave, onClose }) {
   }
 
   return (
-    <div className="w-[400px] shrink-0 border-l border-[#1a1a1a] bg-[#141414] flex flex-col h-full overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-[#1e1e1e] shrink-0">
-        <span className="text-sm font-semibold text-[#f0f0f0]">Новый проект</span>
-        <button onClick={onClose} className="p-1.5 rounded-lg text-[#555] hover:text-[#f0f0f0] hover:bg-white/5 transition-colors">
+    <div className="w-[400px] shrink-0 border-l border-surface bg-panel flex flex-col h-full overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border-1 shrink-0">
+        <span className="text-sm font-semibold text-text">Новый проект</span>
+        <button onClick={onClose} className="p-1.5 rounded-lg text-text-6 hover:text-text hover:bg-muted/10 transition-colors">
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -369,28 +369,28 @@ function CreatePanel({ userId, onSave, onClose }) {
           onChange={e => setName(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && save()}
           placeholder="Название проекта"
-          className="bg-transparent border-b border-[#2a2a2a] focus:border-[#6c63ff]/40 pb-2 text-base font-medium text-[#f0f0f0] outline-none placeholder:text-[#3a3a3a] transition-colors"
+          className="bg-transparent border-b border-border focus:border-[#6c63ff]/40 pb-2 text-base font-medium text-text outline-none placeholder:text-muted transition-colors"
         />
         <textarea value={desc} onChange={e => setDesc(e.target.value)}
           placeholder="Описание (необязательно)"
           rows={2}
-          className="bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs text-[#f0f0f0] outline-none resize-none focus:border-[#6c63ff]/40 placeholder:text-[#3a3a3a] transition-colors"
+          className="bg-bg-2 border border-border rounded-lg px-3 py-2 text-xs text-text outline-none resize-none focus:border-[#6c63ff]/40 placeholder:text-muted transition-colors"
         />
         <div>
-          <p className="text-[10px] text-[#444] mb-1.5">Иконка</p>
+          <p className="text-[10px] text-text-7 mb-1.5">Иконка</p>
           <IconPicker value={icon} onChange={setIcon} />
         </div>
         <div>
-          <p className="text-[10px] text-[#444] mb-1.5">Цвет</p>
+          <p className="text-[10px] text-text-7 mb-1.5">Цвет</p>
           <ColorPicker value={color} onChange={setColor} />
         </div>
         <div>
-          <p className="text-[10px] text-[#444] mb-1.5">Дедлайн</p>
+          <p className="text-[10px] text-text-7 mb-1.5">Дедлайн</p>
           <DatePicker value={deadline} onChange={setDeadline} noOverdue />
         </div>
       </div>
-      <div className="px-5 py-4 border-t border-[#1e1e1e] flex gap-2 shrink-0">
-        <button onClick={onClose} className="flex-1 py-2.5 text-sm text-[#666] border border-[#2a2a2a] rounded-xl hover:border-[#333] transition-colors">
+      <div className="px-5 py-4 border-t border-border-1 flex gap-2 shrink-0">
+        <button onClick={onClose} className="flex-1 py-2.5 text-sm text-subtle border border-border rounded-xl hover:border-border-2 transition-colors">
           Отмена
         </button>
         <button onClick={save} disabled={!name.trim() || saving}
@@ -512,7 +512,7 @@ export default function ProjectsModule() {
   // ── Render ──────────────────────────────────────────────────────────────────
   if (loading) return (
     <div className="px-8 pt-8 flex flex-col gap-3">
-      {[1,2,3].map(i => <div key={i} className="h-28 bg-[#1d1d1d] border border-[#333] rounded-xl animate-pulse" />)}
+      {[1,2,3].map(i => <div key={i} className="h-28 bg-card border border-border-2 rounded-xl animate-pulse" />)}
     </div>
   )
 
@@ -520,7 +520,7 @@ export default function ProjectsModule() {
     <div className="flex h-full items-center justify-center">
       <div className="text-center">
         <AlertCircle className="w-8 h-8 text-[#ef4444] mx-auto mb-3" />
-        <p className="text-[#666] text-sm mb-3">{error}</p>
+        <p className="text-subtle text-sm mb-3">{error}</p>
         <button onClick={load} className="text-sm text-[#6c63ff] hover:underline">Повторить</button>
       </div>
     </div>
@@ -533,11 +533,11 @@ export default function ProjectsModule() {
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
 
         {/* Header */}
-        <div className="px-8 pt-8 pb-4 border-b border-[#1a1a1a] shrink-0">
+        <div className="px-8 pt-8 pb-4 border-b border-surface shrink-0">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h1 className="text-2xl font-bold text-[#f0f0f0]">Проекты</h1>
-              <p className="text-[#666] text-sm mt-0.5">{byStatus.active.length} активных</p>
+              <h1 className="text-2xl font-bold text-text">Проекты</h1>
+              <p className="text-subtle text-sm mt-0.5">{byStatus.active.length} активных</p>
             </div>
             <button
               onClick={() => setPanel('new')}
@@ -546,17 +546,17 @@ export default function ProjectsModule() {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-1 bg-[#111] rounded-xl p-1">
+          <div className="flex gap-1 bg-bg-2 rounded-xl p-1">
             {STATUS_TABS.map(t => (
               <button key={t.key} onClick={() => setTab(t.key)}
                 className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  tab === t.key ? 'bg-[#2a2a2a] text-[#f0f0f0]' : 'text-[#555] hover:text-[#f0f0f0]'
+                  tab === t.key ? 'bg-muted text-text' : 'text-text-6 hover:text-text'
                 }`}
               >
                 {t.label}
                 {tabCounts[t.key] > 0 && (
                   <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] ${
-                    tab === t.key ? 'bg-[#3a3a3a] text-[#aaa]' : 'bg-[#1a1a1a] text-[#444]'
+                    tab === t.key ? 'bg-[#3a3a3a] text-text-3' : 'bg-surface text-text-7'
                   }`}>{tabCounts[t.key]}</span>
                 )}
               </button>
@@ -568,13 +568,13 @@ export default function ProjectsModule() {
         <div className="flex-1 overflow-y-auto px-8 py-5">
           {visibleList.length === 0 ? (
             <div className="text-center py-20">
-              <FolderOpen className="w-10 h-10 text-[#2a2a2a] mx-auto mb-4" />
-              <p className="text-[#f0f0f0] font-medium mb-1">
+              <FolderOpen className="w-10 h-10 text-text-9 mx-auto mb-4" />
+              <p className="text-text font-medium mb-1">
                 {tab === 'active' ? 'Нет активных проектов' : tab === 'completed' ? 'Нет завершённых проектов' : 'Архив пуст'}
               </p>
               {tab === 'active' && (
                 <>
-                  <p className="text-[#666] text-sm mb-5">Создайте первый проект</p>
+                  <p className="text-subtle text-sm mb-5">Создайте первый проект</p>
                   <button onClick={() => setPanel('new')}
                     className="px-4 py-2 bg-[#6c63ff] hover:bg-[#8b85ff] text-white text-sm rounded-xl transition-colors"
                   >Создать проект</button>

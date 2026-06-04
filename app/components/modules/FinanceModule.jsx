@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
@@ -66,7 +66,7 @@ function fmtMoney(n) {
 
 function Toast({ msg, onClose }) {
   return (
-    <div className="fixed top-4 right-4 z-50 flex items-center gap-3 bg-[#1d1d1d] border border-[#333] rounded-xl px-4 py-3 shadow-lg animate-slide-up">
+    <div className="fixed top-4 right-4 z-50 flex items-center gap-3 bg-card border border-border-2 rounded-xl px-4 py-3 shadow-lg animate-slide-up">
       <AlertCircle className="w-4 h-4 text-warning shrink-0" />
       <span className="text-sm text-text">{msg}</span>
       <button onClick={onClose} className="text-subtle hover:text-text ml-1 transition-colors"><X className="w-3 h-3" /></button>
@@ -108,7 +108,7 @@ function FinanceCalendar({ transactions, selectedDate, onSelectDate }) {
   }, [transactions])
 
   return (
-    <div className="bg-[#1d1d1d] border border-[#333] rounded-xl p-4 select-none shrink-0" style={{ width: 220 }}>
+    <div className="bg-card border border-border-2 rounded-xl p-4 select-none shrink-0" style={{ width: 220 }}>
       <p className="text-[10px] text-subtle uppercase tracking-wider mb-3">Календарь</p>
       <div className="flex items-center justify-between mb-2">
         <button type="button" onClick={prevMonth} className="p-1 text-subtle hover:text-text transition-colors rounded">
@@ -201,7 +201,7 @@ function TransactionForm({ categories, selectedDate, onAdd, onClose }) {
   }
 
   return (
-    <div className="bg-[#1d1d1d] border border-[#333] rounded-xl p-4 animate-slide-up">
+    <div className="bg-card border border-border-2 rounded-xl p-4 animate-slide-up">
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm font-medium text-text">Новая транзакция</span>
         <button onClick={onClose} className="text-subtle hover:text-text transition-colors"><X className="w-4 h-4" /></button>
@@ -234,7 +234,7 @@ function TransactionForm({ categories, selectedDate, onAdd, onClose }) {
               value={f.amount}
               onChange={e => set('amount', e.target.value)}
               placeholder="0.00"
-              className="w-full bg-bg border border-[#333] rounded-lg px-3 py-2 text-sm text-text outline-none focus:border-[#f59e0b]/50 transition-colors pr-8"
+              className="w-full bg-bg border border-border-2 rounded-lg px-3 py-2 text-sm text-text outline-none focus:border-[#f59e0b]/50 transition-colors pr-8"
             />
             <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-subtle text-sm">₽</span>
           </div>
@@ -258,7 +258,7 @@ function TransactionForm({ categories, selectedDate, onAdd, onClose }) {
           value={f.note}
           onChange={e => set('note', e.target.value)}
           placeholder="Заметка (необязательно)"
-          className="w-full bg-bg border border-[#333] rounded-lg px-3 py-2 text-sm text-text outline-none focus:border-[#f59e0b]/50 transition-colors placeholder:text-subtle"
+          className="w-full bg-bg border border-border-2 rounded-lg px-3 py-2 text-sm text-text outline-none focus:border-[#f59e0b]/50 transition-colors placeholder:text-subtle"
         />
 
         <div className="flex gap-2 pt-1">
@@ -304,7 +304,7 @@ function TransactionCard({ tx, categories, onRemove, onUpdate }) {
   const setEfF = (k, v) => setEf(p => ({ ...p, [k]: v }))
 
   return (
-    <div className="bg-[#1d1d1d] border border-[#333] rounded-xl overflow-hidden hover:border-[#3f3f3f] transition-all">
+    <div className="bg-card border border-border-2 rounded-xl overflow-hidden hover:border-border-hover transition-all">
       {/* Row */}
       <div className="flex items-center gap-3 px-4 py-3 cursor-pointer" onClick={() => { if (!editing) setExpanded(e => !e) }}>
         {/* Category emoji */}
@@ -351,7 +351,7 @@ function TransactionCard({ tx, categories, onRemove, onUpdate }) {
 
       {/* Expanded: view or edit */}
       {expanded && !editing && (
-        <div className="px-4 pb-3 border-t border-[#2a2a2a] pt-3 animate-slide-up">
+        <div className="px-4 pb-3 border-t border-border pt-3 animate-slide-up">
           {tx.note && <p className="text-xs text-subtle mb-2">{tx.note}</p>}
           <button onClick={startEdit} className="text-xs hover:opacity-80 transition-opacity" style={{ color: ACCENT }}>
             Редактировать
@@ -359,7 +359,7 @@ function TransactionCard({ tx, categories, onRemove, onUpdate }) {
         </div>
       )}
       {expanded && editing && ef && (
-        <form onSubmit={saveEdit} className="px-4 pb-3 border-t border-[#2a2a2a] pt-3 flex flex-col gap-2 animate-slide-up">
+        <form onSubmit={saveEdit} className="px-4 pb-3 border-t border-border pt-3 flex flex-col gap-2 animate-slide-up">
           <div className="flex gap-2">
             {[{ v: 'expense', l: 'Расход' }, { v: 'income', l: 'Доход' }].map(({ v, l }) => (
               <button key={v} type="button" onClick={() => { setEfF('type', v); setEfF('categoryId', null) }}
@@ -374,7 +374,7 @@ function TransactionCard({ tx, categories, onRemove, onUpdate }) {
           <div className="flex gap-2 items-center">
             <input type="number" min="0" step="0.01" value={ef.amount}
               onChange={e => setEfF('amount', e.target.value)}
-              className="flex-1 bg-bg border border-[#333] rounded px-2 py-1.5 text-xs text-text outline-none focus:border-[#f59e0b]/50"
+              className="flex-1 bg-bg border border-border-2 rounded px-2 py-1.5 text-xs text-text outline-none focus:border-[#f59e0b]/50"
             />
             <DatePicker value={ef.date} onChange={v => setEfF('date', v || getTodayStr())} noOverdue />
           </div>
@@ -386,7 +386,7 @@ function TransactionCard({ tx, categories, onRemove, onUpdate }) {
           />
           <input type="text" value={ef.note} onChange={e => setEfF('note', e.target.value)}
             placeholder="Заметка"
-            className="w-full bg-bg border border-[#333] rounded px-2 py-1.5 text-xs text-text outline-none placeholder:text-subtle focus:border-[#f59e0b]/50"
+            className="w-full bg-bg border border-border-2 rounded px-2 py-1.5 text-xs text-text outline-none placeholder:text-subtle focus:border-[#f59e0b]/50"
           />
           <div className="flex gap-2">
             <button type="submit" className="px-3 py-1.5 text-xs rounded-lg transition-colors" style={{ backgroundColor: ACCENT + '25', color: ACCENT }}>Сохранить</button>
@@ -404,7 +404,7 @@ function PeriodStats({ transactions, period, onPeriodChange }) {
   const summary = useMemo(() => getPeriodSummary(transactions, period), [transactions, period])
 
   return (
-    <div className="bg-[#1d1d1d] border border-[#333] rounded-xl p-4">
+    <div className="bg-card border border-border-2 rounded-xl p-4">
       <div className="flex items-center justify-between mb-4">
         <span className="text-xs font-medium text-subtle uppercase tracking-wider">Сводка</span>
         <div className="flex gap-1 bg-surface border border-border rounded-lg p-0.5">
@@ -447,14 +447,14 @@ function ExpenseBreakdown({ transactions, categories, period }) {
   const breakdown = useMemo(() => getExpenseByCategory(summary.transactions, summary.expense), [summary])
 
   if (breakdown.length === 0) return (
-    <div className="bg-[#1d1d1d] border border-[#333] rounded-xl p-4">
+    <div className="bg-card border border-border-2 rounded-xl p-4">
       <p className="text-[10px] text-subtle uppercase tracking-wider mb-2">Расходы по категориям</p>
       <p className="text-xs text-subtle text-center py-4">Нет расходов</p>
     </div>
   )
 
   return (
-    <div className="bg-[#1d1d1d] border border-[#333] rounded-xl p-4">
+    <div className="bg-card border border-border-2 rounded-xl p-4">
       <p className="text-[10px] text-subtle uppercase tracking-wider mb-3">Расходы по категориям</p>
       <div className="flex flex-col gap-2">
         {breakdown.map(({ categoryId, total, pct }) => {
@@ -519,7 +519,7 @@ function BudgetsPanel({ transactions, categories, budgets, userId, onBudgetsChan
         const usage = getBudgetUsage(transactions, budgets, cat.id)
         const isEditing = editId === cat.id
         return (
-          <div key={cat.id} className="bg-[#1d1d1d] border border-[#333] rounded-xl p-4 hover:border-[#3f3f3f] transition-all">
+          <div key={cat.id} className="bg-card border border-border-2 rounded-xl p-4 hover:border-border-hover transition-all">
             <div className="flex items-center gap-3 mb-2">
               <span className="text-base leading-none">{cat.emoji}</span>
               <span className="flex-1 text-sm font-medium text-text">{cat.name}</span>
@@ -706,7 +706,7 @@ function CategoriesPanel({ categories, userId, onCategoriesChange, showToast }) 
       ) : (
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 px-3 py-2 text-xs text-subtle hover:text-text border border-dashed border-[#333] hover:border-[#f59e0b]/40 rounded-xl transition-all"
+          className="flex items-center gap-2 px-3 py-2 text-xs text-subtle hover:text-text border border-dashed border-border-2 hover:border-[#f59e0b]/40 rounded-xl transition-all"
         >
           <Plus className="w-3.5 h-3.5" />
           Новая категория
@@ -721,9 +721,9 @@ function CategoriesPanel({ categories, userId, onCategoriesChange, showToast }) 
 function LoadingSkeleton() {
   return (
     <div className="flex gap-6 p-8">
-      <div className="w-[220px] shrink-0 h-64 bg-[#1d1d1d] border border-[#333] rounded-xl animate-pulse" />
+      <div className="w-[220px] shrink-0 h-64 bg-card border border-border-2 rounded-xl animate-pulse" />
       <div className="flex-1 flex flex-col gap-4">
-        {[1,2,3].map(i => <div key={i} className="h-20 bg-[#1d1d1d] border border-[#333] rounded-xl animate-pulse" />)}
+        {[1,2,3].map(i => <div key={i} className="h-20 bg-card border border-border-2 rounded-xl animate-pulse" />)}
       </div>
     </div>
   )
@@ -879,7 +879,7 @@ export default function FinanceModule() {
           <button
             type="button"
             onClick={handleImport}
-            className="flex items-center gap-2 w-full px-3 py-2.5 bg-[#1d1d1d] border border-[#333] hover:border-[#3f3f3f] rounded-xl text-subtle hover:text-text transition-all"
+            className="flex items-center gap-2 w-full px-3 py-2.5 bg-card border border-border-2 hover:border-border-hover rounded-xl text-subtle hover:text-text transition-all"
           >
             <Upload className="w-4 h-4 shrink-0" />
             <span className="flex-1 text-left text-xs">Импортировать выписку</span>
@@ -905,7 +905,7 @@ export default function FinanceModule() {
           />
 
           {/* Tab bar */}
-          <div className="flex items-center gap-1 bg-[#1d1d1d] border border-[#333] rounded-lg p-0.5 w-fit">
+          <div className="flex items-center gap-1 bg-card border border-border-2 rounded-lg p-0.5 w-fit">
             {[
               { v: 'transactions', l: 'Транзакции' },
               { v: 'budgets',      l: 'Бюджеты' },
@@ -934,7 +934,7 @@ export default function FinanceModule() {
               {!showForm && (
                 <button
                   onClick={() => setShowForm(true)}
-                  className="flex items-center gap-2 px-4 py-3 bg-[#1d1d1d] border border-dashed border-[#333] hover:border-[#f59e0b]/40 hover:bg-[#f59e0b]/5 rounded-xl text-sm text-subtle hover:text-text transition-all"
+                  className="flex items-center gap-2 px-4 py-3 bg-card border border-dashed border-border-2 hover:border-[#f59e0b]/40 hover:bg-[#f59e0b]/5 rounded-xl text-sm text-subtle hover:text-text transition-all"
                 >
                   <Plus className="w-4 h-4" />
                   Добавить транзакцию

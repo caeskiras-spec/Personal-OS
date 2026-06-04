@@ -3,6 +3,7 @@
 import { useOS } from '../../lib/store'
 import { useAuth } from '../../lib/auth'
 import { useRouter } from 'next/navigation'
+import ThemeSwitcher from './ThemeSwitcher'
 
 export default function SettingsScreen() {
   const { resetOS } = useOS()
@@ -43,12 +44,9 @@ export default function SettingsScreen() {
             <span className="text-xs text-subtle bg-muted/30 px-2 py-1 rounded">v0.1.0</span>
           </div>
 
-          <div className="flex items-center justify-between px-5 py-4 border-t border-border">
-            <div>
-              <p className="text-sm font-medium text-text">Тема</p>
-              <p className="text-xs text-subtle mt-0.5">Тёмная тема</p>
-            </div>
-            <span className="text-xs text-subtle">◉ Тёмная</span>
+          <div className="px-5 py-4 border-t border-border">
+            <p className="text-sm font-medium text-text mb-3">Тема</p>
+            <ThemeSwitcher />
           </div>
         </div>
 

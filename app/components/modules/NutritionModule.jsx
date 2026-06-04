@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
@@ -61,7 +61,7 @@ async function analyzePhotoCalories(_file) {
 
 function Toast({ msg, onClose }) {
   return (
-    <div className="fixed top-4 right-4 z-50 flex items-center gap-3 bg-[#1d1d1d] border border-[#333] rounded-xl px-4 py-3 shadow-lg animate-slide-up">
+    <div className="fixed top-4 right-4 z-50 flex items-center gap-3 bg-card border border-border-2 rounded-xl px-4 py-3 shadow-lg animate-slide-up">
       <AlertCircle className="w-4 h-4 text-warning shrink-0" />
       <span className="text-sm text-text">{msg}</span>
       <button onClick={onClose} className="text-subtle hover:text-text ml-1"><X className="w-3 h-3" /></button>
@@ -165,7 +165,7 @@ function NutritionCalendar({ datesWithEntries, selectedDate, onSelectDate }) {
   }, [viewing])
 
   return (
-    <div className="bg-[#1d1d1d] border border-[#333] rounded-xl p-4 select-none shrink-0" style={{ width: 220 }}>
+    <div className="bg-card border border-border-2 rounded-xl p-4 select-none shrink-0" style={{ width: 220 }}>
       <p className="text-[10px] text-subtle uppercase tracking-wider mb-3">Календарь</p>
       <div className="flex items-center justify-between mb-2">
         <button type="button" onClick={prevMonth} className="p-1 text-subtle hover:text-text transition-colors rounded">
@@ -225,7 +225,7 @@ function LastMealTimer({ todayEntries }) {
   }, [todayEntries])
 
   return (
-    <div className="bg-[#1d1d1d] border border-[#333] rounded-xl p-4 select-none" style={{ width: 220 }}>
+    <div className="bg-card border border-border-2 rounded-xl p-4 select-none" style={{ width: 220 }}>
       <div className="flex items-center gap-2 mb-2">
         <Clock className="w-3.5 h-3.5 shrink-0" style={{ color: '#10b981' }} />
         <span className="text-[10px] text-subtle uppercase tracking-wider">С последнего приёма</span>
@@ -301,7 +301,7 @@ function EntryForm({ date, favorites, onAdd, onClose, presetFav }) {
   }
 
   return (
-    <div className="bg-[#1d1d1d] border border-[#333] rounded-xl p-4 animate-slide-up">
+    <div className="bg-card border border-border-2 rounded-xl p-4 animate-slide-up">
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm font-medium text-text">Новая запись · {fmtDate(date)}</span>
         <button onClick={onClose} className="text-subtle hover:text-text transition-colors">
@@ -330,7 +330,7 @@ function EntryForm({ date, favorites, onAdd, onClose, presetFav }) {
           value={fields.name}
           onChange={e => set('name', e.target.value)}
           placeholder="Название продукта / блюда"
-          className="w-full bg-bg border border-[#333] rounded-lg px-3 py-2 text-sm text-text placeholder-subtle outline-none focus:border-[#10b981]/50 transition-colors"
+          className="w-full bg-bg border border-border-2 rounded-lg px-3 py-2 text-sm text-text placeholder-subtle outline-none focus:border-[#10b981]/50 transition-colors"
         />
 
         {/* Time */}
@@ -340,7 +340,7 @@ function EntryForm({ date, favorites, onAdd, onClose, presetFav }) {
             type="time"
             value={fields.time}
             onChange={e => set('time', e.target.value)}
-            className="bg-bg border border-[#333] rounded-lg px-2 py-1.5 text-xs text-text outline-none focus:border-[#10b981]/50 transition-colors"
+            className="bg-bg border border-border-2 rounded-lg px-2 py-1.5 text-xs text-text outline-none focus:border-[#10b981]/50 transition-colors"
           />
           <span className="text-[10px] text-subtle">Время приёма</span>
         </div>
@@ -360,7 +360,7 @@ function EntryForm({ date, favorites, onAdd, onClose, presetFav }) {
                 value={fields[key]}
                 onChange={e => set(key, e.target.value)}
                 placeholder={placeholder}
-                className="w-full bg-bg border border-[#333] rounded-lg px-2 py-1.5 text-xs text-text outline-none focus:border-[#10b981]/50 transition-colors"
+                className="w-full bg-bg border border-border-2 rounded-lg px-2 py-1.5 text-xs text-text outline-none focus:border-[#10b981]/50 transition-colors"
               />
             </div>
           ))}
@@ -371,7 +371,7 @@ function EntryForm({ date, favorites, onAdd, onClose, presetFav }) {
           <button
             type="button"
             onClick={() => setShowPhoto(s => !s)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-subtle hover:text-text border border-[#333] rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-subtle hover:text-text border border-border-2 rounded-lg transition-colors"
           >
             <Camera className="w-3.5 h-3.5" />
             📷 Посчитать по фото
@@ -380,7 +380,7 @@ function EntryForm({ date, favorites, onAdd, onClose, presetFav }) {
         </div>
 
         {showPhoto && (
-          <div className="border border-dashed border-[#333] rounded-lg p-3 flex flex-col gap-2">
+          <div className="border border-dashed border-border-2 rounded-lg p-3 flex flex-col gap-2">
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
             {photoPreview
               ? <img src={photoPreview} alt="preview" className="w-full max-h-32 object-contain rounded-lg opacity-70" />
@@ -416,7 +416,7 @@ function EntryForm({ date, favorites, onAdd, onClose, presetFav }) {
                   key={fav.id}
                   type="button"
                   onClick={() => setFields({ name: fav.name, calories: String(fav.calories), protein: String(fav.protein), carbs: String(fav.carbs), fat: String(fav.fat), mealType: fields.mealType })}
-                  className="px-2 py-1 bg-surface border border-[#333] rounded-lg text-xs text-text hover:border-[#10b981]/40 hover:bg-[#10b981]/5 transition-colors flex items-center gap-1"
+                  className="px-2 py-1 bg-surface border border-border-2 rounded-lg text-xs text-text hover:border-[#10b981]/40 hover:bg-[#10b981]/5 transition-colors flex items-center gap-1"
                 >
                   <Star className="w-2.5 h-2.5 shrink-0" style={{ color: '#10b981' }} />
                   {fav.name}
@@ -450,7 +450,7 @@ function EntryCard({ entry, onRemove, onFavorite }) {
   const [confirmDel, setConfirmDel] = useState(false)
 
   return (
-    <div className="flex items-center gap-3 px-3 py-2 group hover:bg-[#222] transition-colors rounded-lg">
+    <div className="flex items-center gap-3 px-3 py-2 group hover:bg-surface-2 transition-colors rounded-lg">
       <div className="flex-1 min-w-0">
         <span className="text-sm text-text truncate block">{entry.name}</span>
         <div className="flex gap-2 mt-0.5 flex-wrap">
@@ -495,7 +495,7 @@ function FavoritesPanel({ favorites, onRemove }) {
   return (
     <div className="flex flex-col gap-1">
       {favorites.map(fav => (
-        <div key={fav.id} className="flex items-center gap-3 px-3 py-2 group hover:bg-[#222] rounded-lg transition-colors">
+        <div key={fav.id} className="flex items-center gap-3 px-3 py-2 group hover:bg-surface-2 rounded-lg transition-colors">
           <Star className="w-3.5 h-3.5 shrink-0" style={{ color: '#10b981' }} />
           <div className="flex-1 min-w-0">
             <span className="text-sm text-text truncate block">{fav.name}</span>
@@ -518,9 +518,9 @@ function FavoritesPanel({ favorites, onRemove }) {
 function LoadingSkeleton() {
   return (
     <div className="flex gap-6 p-8">
-      <div className="w-[220px] shrink-0 h-64 bg-[#1d1d1d] border border-[#333] rounded-xl animate-pulse" />
+      <div className="w-[220px] shrink-0 h-64 bg-card border border-border-2 rounded-xl animate-pulse" />
       <div className="flex-1 flex flex-col gap-4">
-        {[1,2,3].map(i => <div key={i} className="h-24 bg-[#1d1d1d] border border-[#333] rounded-xl animate-pulse" />)}
+        {[1,2,3].map(i => <div key={i} className="h-24 bg-card border border-border-2 rounded-xl animate-pulse" />)}
       </div>
     </div>
   )
@@ -795,7 +795,7 @@ export default function NutritionModule() {
         <div className="flex-1 min-w-0 flex flex-col gap-4">
 
           {/* Stats row */}
-          <div className="bg-[#1d1d1d] border border-[#333] rounded-xl p-4">
+          <div className="bg-card border border-border-2 rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-medium text-subtle uppercase tracking-wider">{dateLabel}</span>
               <CalorieGoalWidget goal={calorieGoal} onSave={saveCalorieGoal} />
@@ -808,14 +808,14 @@ export default function NutritionModule() {
                   proteinGoal={proteinGoal} carbsGoal={carbsGoal} fatGoal={fatGoal}
                 />
                 {burned > 0 && (
-                  <div className="pt-2 border-t border-[#2a2a2a] flex items-center justify-between text-xs">
+                  <div className="pt-2 border-t border-border flex items-center justify-between text-xs">
                     <span className="text-subtle">Нетто-калории</span>
                     <span className={`font-semibold ${net < 0 ? 'text-[#10b981]' : 'text-text'}`}>{roundInt(net)} ккал</span>
                   </div>
                 )}
               </div>
             </div>
-            <div className="mt-3 pt-3 border-t border-[#2a2a2a]">
+            <div className="mt-3 pt-3 border-t border-border">
               <MacroGoalsRow
                 proteinGoal={proteinGoal} carbsGoal={carbsGoal} fatGoal={fatGoal}
                 onSaveProtein={saveProteinGoal} onSaveCarbs={saveCarbsGoal} onSaveFat={saveFatGoal}
@@ -824,7 +824,7 @@ export default function NutritionModule() {
           </div>
 
           {/* Tab bar */}
-          <div className="flex items-center gap-1 bg-[#1d1d1d] border border-[#333] rounded-lg p-0.5 w-fit">
+          <div className="flex items-center gap-1 bg-card border border-border-2 rounded-lg p-0.5 w-fit">
             <button
               onClick={() => setShowFavTab(false)}
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${!showFavTab ? 'bg-[#10b981]/20 text-[#10b981]' : 'text-subtle hover:text-text'}`}
@@ -841,7 +841,7 @@ export default function NutritionModule() {
           </div>
 
           {showFavTab ? (
-            <div className="bg-[#1d1d1d] border border-[#333] rounded-xl p-4">
+            <div className="bg-card border border-border-2 rounded-xl p-4">
               <FavoritesPanel favorites={favorites} onRemove={removeFavorite} />
             </div>
           ) : (
@@ -857,7 +857,7 @@ export default function NutritionModule() {
               ) : (
                 <button
                   onClick={() => setShowForm(true)}
-                  className="flex items-center gap-2 px-4 py-3 bg-[#1d1d1d] border border-dashed border-[#333] hover:border-[#10b981]/40 hover:bg-[#10b981]/5 rounded-xl text-sm text-subtle hover:text-text transition-all"
+                  className="flex items-center gap-2 px-4 py-3 bg-card border border-dashed border-border-2 hover:border-[#10b981]/40 hover:bg-[#10b981]/5 rounded-xl text-sm text-subtle hover:text-text transition-all"
                 >
                   <Plus className="w-4 h-4" />
                   Добавить приём пищи
@@ -883,8 +883,8 @@ export default function NutritionModule() {
                     if (list.length === 0) return null
                     const mealCals = list.reduce((s, e) => s + (e.calories ?? 0), 0)
                     return (
-                      <div key={mt.id} className="bg-[#1d1d1d] border border-[#333] rounded-xl overflow-hidden">
-                        <div className="flex items-center justify-between px-3 py-2 border-b border-[#2a2a2a]">
+                      <div key={mt.id} className="bg-card border border-border-2 rounded-xl overflow-hidden">
+                        <div className="flex items-center justify-between px-3 py-2 border-b border-border">
                           <span className="text-xs font-medium text-text flex items-center gap-1.5">
                             {mt.emoji} {mt.label}
                           </span>

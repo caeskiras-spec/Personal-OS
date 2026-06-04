@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
@@ -48,7 +48,7 @@ function Ring({ pct, color, size = 72, sw = 6, children }) {
   return (
     <div className="relative flex items-center justify-center shrink-0" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="absolute inset-0 -rotate-90">
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#1a1a1a" strokeWidth={sw} />
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--color-surface-2)" strokeWidth={sw} />
         <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={sw}
           strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={off}
           style={{ transition: 'stroke-dashoffset 0.5s ease' }}
@@ -77,7 +77,7 @@ function IconPicker({ value, onChange }) {
     <div className="flex flex-wrap gap-1">
       {GOAL_ICONS.map(em => (
         <button key={em} type="button" onClick={() => onChange(em)}
-          className={`text-base px-1.5 py-1 rounded-lg transition-all ${value === em ? 'bg-[#2a2a2a] scale-110' : 'hover:bg-[#1a1a1a]'}`}
+          className={`text-base px-1.5 py-1 rounded-lg transition-all ${value === em ? 'bg-muted scale-110' : 'hover:bg-surface'}`}
         >{em}</button>
       ))}
     </div>
@@ -151,19 +151,19 @@ function MilestoneList({ milestones, goalId, userId, onMilestonesChange }) {
           onDragEnd={resetDrag}
           onClick={() => toggle(m)}
           className={`flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-all group ${
-            overId === m.id && dragId !== m.id ? 'bg-[#6c63ff]/10 outline outline-1 -outline-offset-1 outline-[#6c63ff]/30' : 'hover:bg-[#1a1a1a]'
+            overId === m.id && dragId !== m.id ? 'bg-[#6c63ff]/10 outline outline-1 -outline-offset-1 outline-[#6c63ff]/30' : 'hover:bg-surface'
           } ${dragId === m.id ? 'opacity-30' : ''}`}
         >
-          <GripVertical className="w-3 h-3 text-[#333] shrink-0 cursor-grab" />
+          <GripVertical className="w-3 h-3 text-text-8 shrink-0 cursor-grab" />
           <div className={`w-3.5 h-3.5 rounded border shrink-0 flex items-center justify-center transition-all ${
-            m.done ? 'bg-[#22c55e] border-[#22c55e]' : 'border-[#333] group-hover:border-[#555]'
+            m.done ? 'bg-[#22c55e] border-[#22c55e]' : 'border-border-2 group-hover:border-[#555]'
           }`}>
             {m.done && <Check className="w-2.5 h-2.5 text-white" />}
           </div>
-          <span className={`flex-1 text-xs ${m.done ? 'line-through text-[#444]' : 'text-[#ccc]'}`}>{m.title}</span>
+          <span className={`flex-1 text-xs ${m.done ? 'line-through text-text-7' : 'text-text-2'}`}>{m.title}</span>
           <button
             onClick={e => { e.stopPropagation(); remove(m.id) }}
-            className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-500/10 text-[#555] hover:text-[#ef4444] transition-all"
+            className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-500/10 text-text-6 hover:text-[#ef4444] transition-all"
           ><X className="w-3 h-3" /></button>
         </div>
       ))}
@@ -172,7 +172,7 @@ function MilestoneList({ milestones, goalId, userId, onMilestonesChange }) {
           <input autoFocus value={newTitle} onChange={e => setNewTitle(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') addMilestone(); if (e.key === 'Escape') { setAdding(false); setNewTitle('') } }}
             placeholder="Название вехи..."
-            className="flex-1 bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs text-[#f0f0f0] outline-none focus:border-[#6c63ff]/40 placeholder:text-[#333] transition-colors"
+            className="flex-1 bg-bg-2 border border-border rounded-lg px-2.5 py-1.5 text-xs text-text outline-none focus:border-[#6c63ff]/40 placeholder:text-text-8 transition-colors"
           />
           <button onClick={addMilestone} disabled={!newTitle.trim()}
             className="px-2.5 py-1.5 bg-[#6c63ff] text-white rounded-lg text-xs disabled:opacity-40 hover:bg-[#8b85ff] transition-colors"
@@ -180,7 +180,7 @@ function MilestoneList({ milestones, goalId, userId, onMilestonesChange }) {
         </div>
       ) : (
         <button onClick={() => setAdding(true)}
-          className="flex items-center gap-1.5 text-[10px] text-[#444] hover:text-[#6c63ff] transition-colors mt-0.5 px-2"
+          className="flex items-center gap-1.5 text-[10px] text-text-7 hover:text-[#6c63ff] transition-colors mt-0.5 px-2"
         ><Plus className="w-3 h-3" /> Добавить веху</button>
       )}
     </div>
@@ -200,8 +200,8 @@ function GoalCard({ goal, milestones, categories, isSelected, onSelect, onStatus
   return (
     <div
       onClick={() => !confirmDel && onSelect(goal)}
-      className={`bg-[#1d1d1d] border rounded-xl p-4 cursor-pointer transition-all group ${
-        isSelected ? 'border-[#6c63ff]/60 bg-[#1d1d24]' : 'border-[#333] hover:bg-[#222] hover:border-[#3f3f3f]'
+      className={`bg-card border rounded-xl p-4 cursor-pointer transition-all group ${
+        isSelected ? 'border-[#6c63ff]/60 bg-card-selected' : 'border-border-2 hover:bg-surface-2 hover:border-border-hover'
       }`}
     >
       <div className="flex items-start gap-3">
@@ -213,7 +213,7 @@ function GoalCard({ goal, milestones, categories, isSelected, onSelect, onStatus
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <h3 className="text-sm font-semibold text-[#f0f0f0] truncate">{goal.title}</h3>
+              <h3 className="text-sm font-semibold text-text truncate">{goal.title}</h3>
               {cat && (
                 <span className="text-[10px] font-medium mt-0.5 inline-flex items-center gap-1"
                   style={{ color: cat.color }}>
@@ -227,23 +227,23 @@ function GoalCard({ goal, milestones, categories, isSelected, onSelect, onStatus
             >
               {confirmDel ? (
                 <>
-                  <button onClick={() => setConfirmDel(false)} className="text-[10px] text-[#666] px-1.5 py-1 rounded hover:bg-white/5">Нет</button>
+                  <button onClick={() => setConfirmDel(false)} className="text-[10px] text-subtle px-1.5 py-1 rounded hover:bg-muted/10">Нет</button>
                   <button onClick={() => onDelete(goal.id)} className="text-[10px] text-[#ef4444] px-1.5 py-1 rounded hover:bg-red-500/10">Удалить</button>
                 </>
               ) : (
                 <>
                   {goal.status === 'active' && <>
                     <button onClick={() => onStatusChange(goal.id, 'completed')} title="Завершить"
-                      className="p-1 rounded text-[#555] hover:text-[#22c55e] hover:bg-white/5 transition-colors"><Check className="w-3.5 h-3.5" /></button>
+                      className="p-1 rounded text-text-6 hover:text-[#22c55e] hover:bg-muted/10 transition-colors"><Check className="w-3.5 h-3.5" /></button>
                     <button onClick={() => onStatusChange(goal.id, 'archived')} title="Архивировать"
-                      className="p-1 rounded text-[#555] hover:text-[#666] hover:bg-white/5 transition-colors"><Archive className="w-3.5 h-3.5" /></button>
+                      className="p-1 rounded text-text-6 hover:text-subtle hover:bg-muted/10 transition-colors"><Archive className="w-3.5 h-3.5" /></button>
                   </>}
                   {goal.status !== 'active' && (
                     <button onClick={() => onStatusChange(goal.id, 'active')} title="Вернуть"
-                      className="p-1 rounded text-[#555] hover:text-[#6c63ff] hover:bg-white/5 transition-colors"><RotateCcw className="w-3.5 h-3.5" /></button>
+                      className="p-1 rounded text-text-6 hover:text-[#6c63ff] hover:bg-muted/10 transition-colors"><RotateCcw className="w-3.5 h-3.5" /></button>
                   )}
                   <button onClick={() => setConfirmDel(true)}
-                    className="p-1 rounded text-[#555] hover:text-[#ef4444] hover:bg-red-500/10 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                    className="p-1 rounded text-text-6 hover:text-[#ef4444] hover:bg-red-500/10 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                 </>
               )}
             </div>
@@ -251,14 +251,14 @@ function GoalCard({ goal, milestones, categories, isSelected, onSelect, onStatus
 
           {/* Progress bar */}
           <div className="mt-2 flex items-center gap-2">
-            <div className="flex-1 h-1 bg-[#222] rounded-full overflow-hidden">
+            <div className="flex-1 h-1 bg-surface-2 rounded-full overflow-hidden">
               <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: goal.color }} />
             </div>
-            <span className="text-[10px] text-[#555] tabular-nums shrink-0">{pct}%</span>
+            <span className="text-[10px] text-text-6 tabular-nums shrink-0">{pct}%</span>
           </div>
 
           <div className="flex items-center justify-between mt-1.5">
-            <span className="text-[10px] text-[#444]">
+            <span className="text-[10px] text-text-7">
               {goal.progress_type === 'milestones' && ms.length > 0 ? `${msD}/${ms.length} вех` :
                goal.progress_type === 'numeric' && goal.target_value ? `${goal.current_value}/${goal.target_value}${goal.unit ? ' '+goal.unit : ''}` :
                null}
@@ -329,19 +329,19 @@ function GoalForm({ initial, categories, tasks, projects, habits, onSave, onCanc
       <input value={title} onChange={e => setTitle(e.target.value)}
         onKeyDown={e => e.key === 'Enter' && e.preventDefault()}
         placeholder="Название цели"
-        className="bg-transparent border-b border-[#2a2a2a] focus:border-[#6c63ff]/40 pb-2 text-base font-medium text-[#f0f0f0] outline-none placeholder:text-[#3a3a3a] transition-colors"
+        className="bg-transparent border-b border-border focus:border-[#6c63ff]/40 pb-2 text-base font-medium text-text outline-none placeholder:text-muted transition-colors"
       />
       {/* Desc */}
       <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={2} placeholder="Описание (необязательно)"
-        className="bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs text-[#f0f0f0] outline-none resize-none focus:border-[#6c63ff]/40 placeholder:text-[#333] transition-colors"
+        className="bg-bg-2 border border-border rounded-lg px-3 py-2 text-xs text-text outline-none resize-none focus:border-[#6c63ff]/40 placeholder:text-text-8 transition-colors"
       />
       {/* Category */}
       {categories.length > 0 && (
         <div>
-          <p className="text-[10px] text-[#444] mb-1.5">Категория</p>
+          <p className="text-[10px] text-text-7 mb-1.5">Категория</p>
           <div className="flex flex-wrap gap-1.5">
             <button onClick={() => setCatId(null)}
-              className={`px-2.5 py-1 rounded-full text-xs border transition-all ${!catId ? 'bg-[#2a2a2a] border-[#3a3a3a] text-[#f0f0f0]' : 'border-[#222] text-[#555] hover:border-[#333]'}`}
+              className={`px-2.5 py-1 rounded-full text-xs border transition-all ${!catId ? 'bg-muted border-muted text-text' : 'border-surface-2 text-text-6 hover:border-border-2'}`}
             >Все</button>
             {categories.map(c => (
               <button key={c.id} onClick={() => setCatId(c.id)}
@@ -356,21 +356,21 @@ function GoalForm({ initial, categories, tasks, projects, habits, onSave, onCanc
       )}
       {/* Progress type */}
       <div>
-        <p className="text-[10px] text-[#444] mb-1.5">Тип прогресса</p>
+        <p className="text-[10px] text-text-7 mb-1.5">Тип прогресса</p>
         <div className="flex flex-col gap-1.5">
           {PTYPES.map(pt => {
             const active = ptype === pt.key
             return (
               <button key={pt.key} type="button" onClick={() => setPtype(pt.key)}
                 className={`w-full text-left px-3 py-2.5 rounded-xl border transition-all ${
-                  active ? 'bg-[#6c63ff]/10 border-[#6c63ff]/40 text-[#f0f0f0]' : 'bg-[#111] border-[#222] text-[#666] hover:border-[#333] hover:text-[#aaa]'
+                  active ? 'bg-[#6c63ff]/10 border-[#6c63ff]/40 text-text' : 'bg-bg-2 border-surface-2 text-subtle hover:border-border-2 hover:text-text-3'
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full border-2 shrink-0 transition-all ${active ? 'border-[#6c63ff] bg-[#6c63ff]' : 'border-[#333]'}`} />
+                  <div className={`w-3 h-3 rounded-full border-2 shrink-0 transition-all ${active ? 'border-[#6c63ff] bg-[#6c63ff]' : 'border-border-2'}`} />
                   <span className="text-xs font-medium">{pt.label}</span>
                 </div>
-                {active && <p className="text-[10px] text-[#888] mt-1 ml-5">{pt.desc}</p>}
+                {active && <p className="text-[10px] text-text-4 mt-1 ml-5">{pt.desc}</p>}
               </button>
             )
           })}
@@ -380,7 +380,7 @@ function GoalForm({ initial, categories, tasks, projects, habits, onSave, onCanc
       {ptype === 'percent' && (
         <div>
           <div className="flex items-center justify-between mb-1">
-            <p className="text-[10px] text-[#444]">Начальное значение</p>
+            <p className="text-[10px] text-text-7">Начальное значение</p>
             <span className="text-xs font-bold text-[#6c63ff]">{progress}%</span>
           </div>
           <input type="range" min={0} max={100} value={progress} onChange={e => setProgress(+e.target.value)}
@@ -390,46 +390,46 @@ function GoalForm({ initial, categories, tasks, projects, habits, onSave, onCanc
       {ptype === 'numeric' && (
         <div className="flex gap-2">
           <div className="flex-1">
-            <p className="text-[10px] text-[#444] mb-1">Цель <span className="text-[#ef4444]">*</span></p>
+            <p className="text-[10px] text-text-7 mb-1">Цель <span className="text-[#ef4444]">*</span></p>
             <input type="number" value={targVal} onChange={e => setTargVal(e.target.value)} placeholder="50"
-              className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-sm text-[#f0f0f0] outline-none focus:border-[#6c63ff]/40 placeholder:text-[#333]" />
+              className="w-full bg-bg-2 border border-border rounded-lg px-2.5 py-1.5 text-sm text-text outline-none focus:border-[#6c63ff]/40 placeholder:text-text-8" />
           </div>
           <div className="flex-1">
-            <p className="text-[10px] text-[#444] mb-1">Текущее</p>
+            <p className="text-[10px] text-text-7 mb-1">Текущее</p>
             <input type="number" value={currVal} onChange={e => setCurrVal(e.target.value)}
-              className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-sm text-[#f0f0f0] outline-none focus:border-[#6c63ff]/40" />
+              className="w-full bg-bg-2 border border-border rounded-lg px-2.5 py-1.5 text-sm text-text outline-none focus:border-[#6c63ff]/40" />
           </div>
           <div className="w-20">
-            <p className="text-[10px] text-[#444] mb-1">Ед.</p>
+            <p className="text-[10px] text-text-7 mb-1">Ед.</p>
             <input value={unit} onChange={e => setUnit(e.target.value)} placeholder="книг"
-              className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-sm text-[#f0f0f0] outline-none focus:border-[#6c63ff]/40 placeholder:text-[#333]" />
+              className="w-full bg-bg-2 border border-border rounded-lg px-2.5 py-1.5 text-sm text-text outline-none focus:border-[#6c63ff]/40 placeholder:text-text-8" />
           </div>
         </div>
       )}
       {ptype === 'milestones' && (
         <div className="bg-[#6c63ff]/8 border border-[#6c63ff]/20 rounded-xl px-3 py-2.5">
           <p className="text-[10px] text-[#8b85ff] font-medium mb-0.5">После создания цели</p>
-          <p className="text-[10px] text-[#666]">Откройте карточку цели и добавьте первую веху. Прогресс пойдёт автоматически.</p>
+          <p className="text-[10px] text-subtle">Откройте карточку цели и добавьте первую веху. Прогресс пойдёт автоматически.</p>
         </div>
       )}
       {/* Icon + color */}
       <div>
-        <p className="text-[10px] text-[#444] mb-1.5">Иконка</p>
+        <p className="text-[10px] text-text-7 mb-1.5">Иконка</p>
         <IconPicker value={icon} onChange={setIcon} />
       </div>
       <div>
-        <p className="text-[10px] text-[#444] mb-1.5">Цвет</p>
+        <p className="text-[10px] text-text-7 mb-1.5">Цвет</p>
         <ColorPicker value={color} onChange={setColor} />
       </div>
       {/* Deadline */}
       <div>
-        <p className="text-[10px] text-[#444] mb-1.5">Дедлайн</p>
+        <p className="text-[10px] text-text-7 mb-1.5">Дедлайн</p>
         <DatePicker value={deadline} onChange={setDeadline} noOverdue />
       </div>
       {/* Linked: Projects */}
       {projects.length > 0 && (
         <div>
-          <p className="text-[10px] text-[#444] mb-1.5">Связанные проекты</p>
+          <p className="text-[10px] text-text-7 mb-1.5">Связанные проекты</p>
           <div className="flex flex-wrap gap-1.5">
             {projects.map(p => {
               const on = linkedProj.includes(p.id)
@@ -446,13 +446,13 @@ function GoalForm({ initial, categories, tasks, projects, habits, onSave, onCanc
       {/* Linked: Tasks */}
       {tasks.filter(t => !t.done).length > 0 && (
         <div>
-          <p className="text-[10px] text-[#444] mb-1.5">Связанные задачи</p>
+          <p className="text-[10px] text-text-7 mb-1.5">Связанные задачи</p>
           <div className="flex flex-col gap-0.5 max-h-32 overflow-y-auto">
             {tasks.filter(t => !t.done).map(t => {
               const on = linkedTask.includes(t.id)
               return (
                 <button key={t.id} onClick={() => toggleId(setLinkedTask, t.id)}
-                  className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-left transition-all ${on ? 'bg-[#6c63ff]/15 text-[#8b85ff]' : 'text-[#555] hover:bg-[#1a1a1a] hover:text-[#f0f0f0]'}`}
+                  className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-left transition-all ${on ? 'bg-[#6c63ff]/15 text-[#8b85ff]' : 'text-text-6 hover:bg-surface hover:text-text'}`}
                 >
                   {on && <Check className="w-3 h-3 shrink-0" />}
                   <span className="truncate">{t.title}</span>
@@ -465,7 +465,7 @@ function GoalForm({ initial, categories, tasks, projects, habits, onSave, onCanc
       {/* Linked: Habits */}
       {habits.length > 0 && (
         <div>
-          <p className="text-[10px] text-[#444] mb-1.5">Связанные привычки</p>
+          <p className="text-[10px] text-text-7 mb-1.5">Связанные привычки</p>
           <div className="flex flex-wrap gap-1.5">
             {habits.map(h => {
               const on = linkedHab.includes(h.id)
@@ -481,7 +481,7 @@ function GoalForm({ initial, categories, tasks, projects, habits, onSave, onCanc
       )}
       {/* Actions */}
       <div className="flex gap-2 pt-1">
-        <button onClick={onCancel} className="flex-1 py-2.5 text-sm text-[#666] border border-[#2a2a2a] rounded-xl hover:border-[#333] transition-colors">
+        <button onClick={onCancel} className="flex-1 py-2.5 text-sm text-subtle border border-border rounded-xl hover:border-border-2 transition-colors">
           Отмена
         </button>
         <button onClick={save} disabled={!title.trim() || saving}
@@ -522,18 +522,18 @@ function DetailPanel({ goal, milestones, categories, tasks, projects, habits, us
   }
 
   return (
-    <div className="w-[420px] shrink-0 border-l border-[#1a1a1a] bg-[#141414] flex flex-col h-full overflow-hidden">
+    <div className="w-[420px] shrink-0 border-l border-surface bg-panel flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-[#1e1e1e] shrink-0">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border-1 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
           <span className="text-xl shrink-0">{goal.icon}</span>
-          <span className="text-sm font-semibold text-[#f0f0f0] truncate">{goal.title}</span>
+          <span className="text-sm font-semibold text-text truncate">{goal.title}</span>
         </div>
         <div className="flex items-center gap-1 shrink-0">
           <button onClick={() => setEditing(v => !v)}
-            className={`p-1.5 rounded-lg transition-colors ${editing ? 'bg-[#2a2a2a] text-[#f0f0f0]' : 'text-[#555] hover:text-[#f0f0f0] hover:bg-white/5'}`}
+            className={`p-1.5 rounded-lg transition-colors ${editing ? 'bg-muted text-text' : 'text-text-6 hover:text-text hover:bg-muted/10'}`}
           ><Edit2 className="w-3.5 h-3.5" /></button>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-[#555] hover:text-[#f0f0f0] hover:bg-white/5 transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-lg text-text-6 hover:text-text hover:bg-muted/10 transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -556,7 +556,7 @@ function DetailPanel({ goal, milestones, categories, tasks, projects, habits, us
               const noTarget = goal.progress_type === 'numeric' && !goal.target_value
               const noMilestones = goal.progress_type === 'milestones' && ms.length === 0
               return (
-                <div className="bg-[#1a1a1a] border border-[#222] rounded-xl p-4">
+                <div className="bg-surface border border-surface-2 rounded-xl p-4">
                   <div className="flex items-center gap-4">
                     <Ring pct={pct} color={goal.color} size={72} sw={7}>
                       <span className="text-sm font-bold" style={{ color: goal.color }}>{pct}%</span>
@@ -564,43 +564,43 @@ function DetailPanel({ goal, milestones, categories, tasks, projects, habits, us
                     <div className="flex-1 min-w-0">
                       {cat && <p className="text-[10px] mb-0.5" style={{ color: cat.color }}>{cat.emoji} {cat.name}</p>}
                       {goal.progress_type === 'numeric' && goal.target_value ? (
-                        <p className="text-sm font-semibold text-[#f0f0f0]">{goal.current_value} / {goal.target_value}{goal.unit ? ' '+goal.unit : ''}</p>
+                        <p className="text-sm font-semibold text-text">{goal.current_value} / {goal.target_value}{goal.unit ? ' '+goal.unit : ''}</p>
                       ) : goal.progress_type === 'milestones' ? (
                         ms.length > 0
-                          ? <p className="text-sm font-semibold text-[#f0f0f0]">{msD} из {ms.length} вех</p>
-                          : <p className="text-sm font-semibold text-[#555]">Нет вех</p>
+                          ? <p className="text-sm font-semibold text-text">{msD} из {ms.length} вех</p>
+                          : <p className="text-sm font-semibold text-text-6">Нет вех</p>
                       ) : (
-                        <p className="text-sm font-semibold text-[#f0f0f0]">{pct}% выполнено</p>
+                        <p className="text-sm font-semibold text-text">{pct}% выполнено</p>
                       )}
                       {dl && <p className="text-[10px] mt-1" style={{ color: dl.color }}>{dl.label}</p>}
-                      {goal.description && <p className="text-xs text-[#555] mt-1 line-clamp-2">{goal.description}</p>}
+                      {goal.description && <p className="text-xs text-text-6 mt-1 line-clamp-2">{goal.description}</p>}
                     </div>
                   </div>
 
                   {/* Context hint */}
                   {noMilestones && (
-                    <div className="mt-3 pt-3 border-t border-[#252525]">
+                    <div className="mt-3 pt-3 border-t border-surface-3">
                       <p className="text-[11px] text-[#8b85ff]">Добавьте вехи ниже — прогресс пойдёт автоматически</p>
                     </div>
                   )}
                   {!noMilestones && goal.progress_type === 'milestones' && ms.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-[#252525]">
-                      <p className="text-[11px] text-[#555]">Отмечайте вехи ниже, чтобы двигать прогресс</p>
+                    <div className="mt-3 pt-3 border-t border-surface-3">
+                      <p className="text-[11px] text-text-6">Отмечайте вехи ниже, чтобы двигать прогресс</p>
                     </div>
                   )}
                   {goal.progress_type === 'percent' && (
-                    <div className="mt-3 pt-3 border-t border-[#252525]">
-                      <p className="text-[11px] text-[#555]">Измените прогресс через редактирование цели (карандаш выше)</p>
+                    <div className="mt-3 pt-3 border-t border-surface-3">
+                      <p className="text-[11px] text-text-6">Измените прогресс через редактирование цели (карандаш выше)</p>
                     </div>
                   )}
                   {noTarget && (
-                    <div className="mt-3 pt-3 border-t border-[#252525]">
+                    <div className="mt-3 pt-3 border-t border-surface-3">
                       <p className="text-[11px] text-[#f59e0b]">Укажите целевое значение в редакторе — иначе прогресс не считается</p>
                     </div>
                   )}
                   {!noTarget && goal.progress_type === 'numeric' && goal.target_value && (
-                    <div className="mt-3 pt-3 border-t border-[#252525]">
-                      <p className="text-[10px] text-[#444] mb-1.5">Обновить текущее значение</p>
+                    <div className="mt-3 pt-3 border-t border-surface-3">
+                      <p className="text-[10px] text-text-7 mb-1.5">Обновить текущее значение</p>
                       <div className="flex gap-2">
                         <input
                           type="number"
@@ -608,9 +608,9 @@ function DetailPanel({ goal, milestones, categories, tasks, projects, habits, us
                           onChange={e => setQuickVal(e.target.value)}
                           onKeyDown={e => { if (e.key === 'Enter') saveQuickVal() }}
                           placeholder={String(goal.current_value ?? 0)}
-                          className="flex-1 bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-sm text-[#f0f0f0] outline-none focus:border-[#6c63ff]/40 placeholder:text-[#333]"
+                          className="flex-1 bg-bg-2 border border-border rounded-lg px-2.5 py-1.5 text-sm text-text outline-none focus:border-[#6c63ff]/40 placeholder:text-text-8"
                         />
-                        {goal.unit && <span className="self-center text-xs text-[#555] shrink-0">{goal.unit}</span>}
+                        {goal.unit && <span className="self-center text-xs text-text-6 shrink-0">{goal.unit}</span>}
                         <button
                           onClick={saveQuickVal}
                           disabled={!quickVal.trim() || savingQuick}
@@ -626,7 +626,7 @@ function DetailPanel({ goal, milestones, categories, tasks, projects, habits, us
             {/* Milestones */}
             {goal.progress_type === 'milestones' && (
               <div>
-                <p className="text-[10px] text-[#3a3a3a] uppercase tracking-widest mb-2">Вехи</p>
+                <p className="text-[10px] text-muted uppercase tracking-widest mb-2">Вехи</p>
                 <MilestoneList milestones={milestones} goalId={goal.id} userId={userId} onMilestonesChange={onMilestonesChange} />
               </div>
             )}
@@ -634,7 +634,7 @@ function DetailPanel({ goal, milestones, categories, tasks, projects, habits, us
             {/* Linked items */}
             {(goal.linked_project_ids?.length > 0 || goal.linked_task_ids?.length > 0 || goal.linked_habit_ids?.length > 0) && (
               <div className="flex flex-col gap-2">
-                <p className="text-[10px] text-[#3a3a3a] uppercase tracking-widest">Связано</p>
+                <p className="text-[10px] text-muted uppercase tracking-widest">Связано</p>
                 <LinkedChips ids={goal.linked_project_ids || []} items={projects}
                   getLabel={x => `${x.icon||'📁'} ${x.name}`} getColor={x => x.color}
                   baseRoute="/modules/projects" />
@@ -648,14 +648,14 @@ function DetailPanel({ goal, milestones, categories, tasks, projects, habits, us
             )}
 
             {/* Delete */}
-            <div className="pt-2 border-t border-[#1e1e1e]" onClick={e => e.stopPropagation()}>
+            <div className="pt-2 border-t border-border-1" onClick={e => e.stopPropagation()}>
               {confirmDel ? (
                 <div className="flex gap-2">
-                  <button onClick={() => setConfirmDel(false)} className="flex-1 py-2 text-xs text-[#666] border border-[#2a2a2a] rounded-xl hover:border-[#333] transition-colors">Отмена</button>
+                  <button onClick={() => setConfirmDel(false)} className="flex-1 py-2 text-xs text-subtle border border-border rounded-xl hover:border-border-2 transition-colors">Отмена</button>
                   <button onClick={() => onDelete(goal.id)} className="flex-1 py-2 text-xs text-[#ef4444] border border-[#ef4444]/30 rounded-xl hover:bg-red-500/10 transition-colors">Удалить цель</button>
                 </div>
               ) : (
-                <button onClick={() => setConfirmDel(true)} className="w-full py-2 text-xs text-[#444] hover:text-[#ef4444] transition-colors flex items-center justify-center gap-1.5">
+                <button onClick={() => setConfirmDel(true)} className="w-full py-2 text-xs text-text-7 hover:text-[#ef4444] transition-colors flex items-center justify-center gap-1.5">
                   <Trash2 className="w-3.5 h-3.5" /> Удалить цель
                 </button>
               )}
@@ -769,7 +769,7 @@ export default function GoalsModule() {
   // ── Render ────────────────────────────────────────────────────────────────────
   if (loading) return (
     <div className="px-8 pt-8 flex flex-col gap-3">
-      {[1,2,3].map(i => <div key={i} className="h-28 bg-[#1d1d1d] border border-[#333] rounded-xl animate-pulse" />)}
+      {[1,2,3].map(i => <div key={i} className="h-28 bg-card border border-border-2 rounded-xl animate-pulse" />)}
     </div>
   )
 
@@ -777,7 +777,7 @@ export default function GoalsModule() {
     <div className="flex h-full items-center justify-center">
       <div className="text-center">
         <AlertCircle className="w-8 h-8 text-[#ef4444] mx-auto mb-3" />
-        <p className="text-[#666] text-sm mb-3">{error}</p>
+        <p className="text-subtle text-sm mb-3">{error}</p>
         <button onClick={load} className="text-sm text-[#6c63ff] hover:underline">Повторить</button>
       </div>
     </div>
@@ -790,11 +790,11 @@ export default function GoalsModule() {
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
 
         {/* Header */}
-        <div className="px-8 pt-8 pb-4 border-b border-[#1a1a1a] shrink-0">
+        <div className="px-8 pt-8 pb-4 border-b border-surface shrink-0">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h1 className="text-2xl font-bold text-[#f0f0f0]">Цели</h1>
-              <p className="text-[#666] text-sm mt-0.5">{byStatus.active.length} активных</p>
+              <h1 className="text-2xl font-bold text-text">Цели</h1>
+              <p className="text-subtle text-sm mt-0.5">{byStatus.active.length} активных</p>
             </div>
             <button onClick={() => { setCreating(true); setPanel('new') }}
               className="flex items-center gap-2 px-4 py-2 bg-[#6c63ff] hover:bg-[#8b85ff] text-white text-sm font-medium rounded-xl transition-colors"
@@ -805,7 +805,7 @@ export default function GoalsModule() {
           {categories.length > 0 && (
             <div className="flex gap-1.5 flex-wrap mb-3">
               <button onClick={() => setFilterCat(null)}
-                className={`px-2.5 py-1 rounded-full text-xs border transition-all ${!filterCat ? 'bg-[#2a2a2a] border-[#3a3a3a] text-[#f0f0f0]' : 'border-[#222] text-[#555] hover:border-[#333]'}`}
+                className={`px-2.5 py-1 rounded-full text-xs border transition-all ${!filterCat ? 'bg-muted border-muted text-text' : 'border-surface-2 text-text-6 hover:border-border-2'}`}
               >Все</button>
               {categories.map(c => (
                 <button key={c.id} onClick={() => setFilterCat(filterCat === c.id ? null : c.id)}
@@ -819,14 +819,14 @@ export default function GoalsModule() {
           )}
 
           {/* Tabs */}
-          <div className="flex gap-1 bg-[#111] rounded-xl p-1">
+          <div className="flex gap-1 bg-bg-2 rounded-xl p-1">
             {STATUS_TABS.map(t => (
               <button key={t.key} onClick={() => setTab(t.key)}
-                className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${tab === t.key ? 'bg-[#2a2a2a] text-[#f0f0f0]' : 'text-[#555] hover:text-[#f0f0f0]'}`}
+                className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${tab === t.key ? 'bg-muted text-text' : 'text-text-6 hover:text-text'}`}
               >
                 {t.label}
                 {tabCounts[t.key] > 0 && (
-                  <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] ${tab === t.key ? 'bg-[#3a3a3a] text-[#aaa]' : 'bg-[#1a1a1a] text-[#444]'}`}>
+                  <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] ${tab === t.key ? 'bg-[#3a3a3a] text-text-3' : 'bg-surface text-text-7'}`}>
                     {tabCounts[t.key]}
                   </span>
                 )}
@@ -839,13 +839,13 @@ export default function GoalsModule() {
         <div className="flex-1 overflow-y-auto px-8 py-5">
           {visibleList.length === 0 ? (
             <div className="text-center py-20">
-              <Target className="w-10 h-10 text-[#2a2a2a] mx-auto mb-4" />
-              <p className="text-[#f0f0f0] font-medium mb-1">
+              <Target className="w-10 h-10 text-text-9 mx-auto mb-4" />
+              <p className="text-text font-medium mb-1">
                 {tab === 'active' ? 'Нет активных целей' : tab === 'completed' ? 'Нет завершённых целей' : 'Архив пуст'}
               </p>
               {tab === 'active' && (
                 <>
-                  <p className="text-[#666] text-sm mb-5">Поставьте первую цель</p>
+                  <p className="text-subtle text-sm mb-5">Поставьте первую цель</p>
                   <button onClick={() => { setCreating(true); setPanel('new') }}
                     className="px-4 py-2 bg-[#6c63ff] hover:bg-[#8b85ff] text-white text-sm rounded-xl transition-colors"
                   >Создать цель</button>
@@ -873,10 +873,10 @@ export default function GoalsModule() {
 
       {/* ── Right panel ───────────────────────────────────────────────────── */}
       {panel === 'new' && (
-        <div className="w-[420px] shrink-0 border-l border-[#1a1a1a] bg-[#141414] flex flex-col h-full overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-[#1e1e1e] shrink-0">
-            <span className="text-sm font-semibold text-[#f0f0f0]">Новая цель</span>
-            <button onClick={() => { setPanel(null); setCreating(false) }} className="p-1.5 rounded-lg text-[#555] hover:text-[#f0f0f0] hover:bg-white/5 transition-colors">
+        <div className="w-[420px] shrink-0 border-l border-surface bg-panel flex flex-col h-full overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-border-1 shrink-0">
+            <span className="text-sm font-semibold text-text">Новая цель</span>
+            <button onClick={() => { setPanel(null); setCreating(false) }} className="p-1.5 rounded-lg text-text-6 hover:text-text hover:bg-muted/10 transition-colors">
               <X className="w-4 h-4" />
             </button>
           </div>

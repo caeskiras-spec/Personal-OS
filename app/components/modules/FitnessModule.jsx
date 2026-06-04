@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Plus, X, Check, AlertCircle, Edit2, Target, Watch } from 'lucide-react'
@@ -428,7 +428,7 @@ function WorkoutPanel({ workout, initialDate, types, userId, onTypesChange, onSa
   const valid = form.date && (Number(form.duration) > 0 || form.notes.trim() || form.exercises.length > 0)
 
   return (
-    <div className="bg-[#1d1d1d] border border-[#333] rounded-xl p-5 mb-6 animate-slide-up">
+    <div className="bg-card border border-border-2 rounded-xl p-5 mb-6 animate-slide-up">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-text text-base">
           {isEdit ? 'Редактировать тренировку' : 'Новая тренировка'}
@@ -558,8 +558,8 @@ function WorkoutCard({ workout, isSelected, onClick }) {
       onClick={onClick}
       className={`flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer ${
         isSelected
-          ? 'bg-[#1a1a2e] border-accent/40'
-          : 'bg-[#1d1d1d] border-[#333] hover:bg-[#222] hover:border-[#3f3f3f]'
+          ? 'bg-card-accent border-accent/40'
+          : 'bg-card border-border-2 hover:bg-surface-2 hover:border-border-hover'
       }`}
     >
       <div
@@ -612,7 +612,7 @@ function WeeklyGoalWidget({ weeklyCount, weeklyGoal, onGoalChange }) {
   const done = weeklyGoal > 0 && weeklyCount >= weeklyGoal
 
   return (
-    <div className="bg-[#1d1d1d] border border-[#333] rounded-xl p-4">
+    <div className="bg-card border border-border-2 rounded-xl p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Target className="w-3.5 h-3.5 text-accent" />
@@ -690,7 +690,7 @@ function WatchWidget({ onToast }) {
     <button
       type="button"
       onClick={handle}
-      className="flex items-center gap-2 w-full px-3 py-2.5 bg-[#1d1d1d] border border-[#333] hover:border-[#3f3f3f] rounded-xl text-sm text-subtle hover:text-text transition-all"
+      className="flex items-center gap-2 w-full px-3 py-2.5 bg-card border border-border-2 hover:border-border-hover rounded-xl text-sm text-subtle hover:text-text transition-all"
     >
       <Watch className="w-4 h-4 shrink-0" />
       <span className="flex-1 text-left text-xs">Подключить к часам</span>
@@ -763,7 +763,7 @@ function WorkoutCalendar({ workouts, onAddForDate, openPanelDate }) {
   }
 
   return (
-    <div className="bg-[#1d1d1d] border border-[#333] rounded-xl p-4">
+    <div className="bg-card border border-border-2 rounded-xl p-4">
       <div className="text-xs font-medium text-subtle uppercase tracking-wider mb-3">
         35 дней
       </div>

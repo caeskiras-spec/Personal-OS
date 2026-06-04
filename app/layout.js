@@ -1,6 +1,7 @@
 import './globals.css'
 import { AuthProvider } from '../lib/auth'
 import { OSProvider } from '../lib/store'
+import ThemeProvider from './components/ThemeProvider'
 
 export const metadata = {
   title: 'PERSONAL OS',
@@ -11,13 +12,22 @@ export const metadata = {
   },
 }
 
+// Anti-FOUC: runs synchronously before paint, reads localStorage → sets data-theme
+const themeScript = `(function(){try{var t=localStorage.getItem('theme')||'system';if(t==='system'){t=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`
+
 export default function RootLayout({ children }) {
   return (
-    <html lang="ru">
+    <html lang="ru" data-theme="dark" suppressHydrationWarning>
+      <head>
+        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body>
         <AuthProvider>
           <OSProvider>
-            {children}
+            <ThemeProvider>
+              {children}
+            </ThemeProvider>
           </OSProvider>
         </AuthProvider>
       </body>

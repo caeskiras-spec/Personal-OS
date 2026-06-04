@@ -4,6 +4,76 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Theme tokens ──────────────────────────────────────────────── */
+/* RGB channels (for Tailwind opacity modifiers like bg-muted/30)  */
+/* Hex vars   (for tokens that don't need opacity)                  */
+
+:root, [data-theme="dark"] {
+  /* RGB channels */
+  --bg-rgb:      15 15 15;
+  --surface-rgb: 26 26 26;
+  --muted-rgb:   58 58 58;
+  --subtle-rgb:  102 102 102;
+  --text-rgb:    240 240 240;
+  --border-rgb:  42 42 42;
+
+  /* Hex tokens */
+  --color-card:          #1d1d1d;
+  --color-panel:         #141414;
+  --color-bg-2:          #111111;
+  --color-surface-2:     #222222;
+  --color-surface-3:     #252525;
+  --color-border-1:      #1e1e1e;
+  --color-border-2:      #333333;
+  --color-border-hover:  #3f3f3f;
+  --color-text-2:        #cccccc;
+  --color-text-3:        #aaaaaa;
+  --color-text-4:        #888888;
+  --color-text-6:        #555555;
+  --color-text-7:        #444444;
+  --color-text-8:        #333333;
+  --color-text-9:        #2a2a2a;
+  --color-card-selected: #1d1d24;
+  --color-card-accent:   #1a1a2e;
+  --hover-overlay:       rgba(255,255,255,0.05);
+  --scrollbar-track:     #1a1a1a;
+  --scrollbar-thumb:     #3a3a3a;
+  --scrollbar-thumb-h:   #555555;
+}
+
+[data-theme="light"] {
+  --bg-rgb:      245 245 245;
+  --surface-rgb: 255 255 255;
+  --muted-rgb:   200 200 200;
+  --subtle-rgb:  119 119 119;
+  --text-rgb:    17 17 17;
+  --border-rgb:  228 228 228;
+
+  --color-card:          #ffffff;
+  --color-panel:         #f0f0f0;
+  --color-bg-2:          #eeeeee;
+  --color-surface-2:     #f4f4f4;
+  --color-surface-3:     #ebebeb;
+  --color-border-1:      #ececec;
+  --color-border-2:      #d4d4d4;
+  --color-border-hover:  #b4b4b4;
+  --color-text-2:        #333333;
+  --color-text-3:        #555555;
+  --color-text-4:        #666666;
+  --color-text-6:        #888888;
+  --color-text-7:        #999999;
+  --color-text-8:        #aaaaaa;
+  --color-text-9:        #bbbbbb;
+  --color-card-selected: #f0eeff;
+  --color-card-accent:   #eeeeff;
+  --hover-overlay:       rgba(0,0,0,0.04);
+  --scrollbar-track:     #f0f0f0;
+  --scrollbar-thumb:     #cccccc;
+  --scrollbar-thumb-h:   #aaaaaa;
+}
+
+/* ── Base ──────────────────────────────────────────────────────── */
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -11,93 +81,73 @@
 }
 
 html, body {
-  background-color: #0f0f0f;
-  color: #f0f0f0;
+  background-color: rgb(var(--bg-rgb));
+  color: rgb(var(--text-rgb));
   font-family: 'Inter', system-ui, sans-serif;
   height: 100%;
 }
 
-::-webkit-scrollbar {
-  width: 4px;
-}
-::-webkit-scrollbar-track {
-  background: #1a1a1a;
-}
-::-webkit-scrollbar-thumb {
-  background: #3a3a3a;
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
+::-webkit-scrollbar            { width: 4px; }
+::-webkit-scrollbar-track      { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb      { background: var(--scrollbar-thumb); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover{ background: var(--scrollbar-thumb-h); }
 
-.animate-fade-in {
-  animation: fadeIn 0.4s ease;
-}
-.animate-slide-up {
-  animation: slideUp 0.3s ease;
-}
+/* ── Animations ────────────────────────────────────────────────── */
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-@keyframes slideUp {
-  from { transform: translateY(8px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
+.animate-fade-in  { animation: fadeIn  0.4s ease; }
+.animate-slide-up { animation: slideUp 0.3s ease; }
 
-/* Hide native number spinners globally */
+@keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* ── Hover overlay (white in dark, dark in light) ──────────────── */
+
+.hover-overlay:hover { background-color: var(--hover-overlay); }
+
+/* ── Number spinners ───────────────────────────────────────────── */
+
 input[type=number]::-webkit-inner-spin-button,
-input[type=number]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-input[type=number] {
-  -moz-appearance: textfield;
-}
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
 
-/* ── Tiptap editor & viewer (JournalModule) ───────────────────── */
+/* ── Select elements (dark scheme for native dropdown) ─────────── */
+
+select { color-scheme: var(--select-scheme, dark); }
+[data-theme="light"] select { --select-scheme: light; }
+
+/* ── Tiptap editor & viewer ────────────────────────────────────── */
+
 .tiptap-editor {
   min-height: 180px;
   padding: 0.75rem;
   outline: none;
   font-size: 0.875rem;
   line-height: 1.6;
-  color: #f0f0f0;
+  color: rgb(var(--text-rgb));
 }
 .tiptap-editor p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
-  color: #3a3a3a;
+  color: var(--color-border-2);
   pointer-events: none;
   float: left;
   height: 0;
 }
-/* Shared between editor and viewer */
 .tiptap-editor h2, .tiptap-view h2 {
-  font-size: 1.05rem; font-weight: 600; margin: 0.6rem 0 0.2rem; color: #f0f0f0;
+  font-size: 1.05rem; font-weight: 600; margin: 0.6rem 0 0.2rem;
+  color: rgb(var(--text-rgb));
 }
-.tiptap-editor ul, .tiptap-view ul {
-  list-style: disc; padding-left: 1.4rem; margin: 0.3rem 0;
-}
-.tiptap-editor ol, .tiptap-view ol {
-  list-style: decimal; padding-left: 1.4rem; margin: 0.3rem 0;
-}
+.tiptap-editor ul, .tiptap-view ul { list-style: disc; padding-left: 1.4rem; margin: 0.3rem 0; }
+.tiptap-editor ol, .tiptap-view ol { list-style: decimal; padding-left: 1.4rem; margin: 0.3rem 0; }
 .tiptap-editor li, .tiptap-view li { margin: 0.1rem 0; }
-.tiptap-editor p, .tiptap-view p { margin: 0.1rem 0; }
+.tiptap-editor p,  .tiptap-view p  { margin: 0.1rem 0; }
+
 /* Task list */
 .tiptap-editor ul[data-type="taskList"],
-.tiptap-view  ul[data-type="taskList"] {
-  list-style: none; padding-left: 0.2rem; margin: 0.3rem 0;
-}
+.tiptap-view  ul[data-type="taskList"] { list-style: none; padding-left: 0.2rem; margin: 0.3rem 0; }
 .tiptap-editor ul[data-type="taskList"] li,
-.tiptap-view  ul[data-type="taskList"] li {
-  display: flex; align-items: baseline; gap: 0.5rem;
-}
+.tiptap-view  ul[data-type="taskList"] li { display: flex; align-items: baseline; gap: 0.5rem; }
 .tiptap-editor ul[data-type="taskList"] li > label,
-.tiptap-view  ul[data-type="taskList"] li > label {
-  display: flex; align-items: center; margin-top: 2px;
-}
+.tiptap-view  ul[data-type="taskList"] li > label { display: flex; align-items: center; margin-top: 2px; }
 .tiptap-editor ul[data-type="taskList"] li > label input[type="checkbox"],
 .tiptap-view  ul[data-type="taskList"] li > label input[type="checkbox"] {
   accent-color: #6c63ff; width: 14px; height: 14px; cursor: pointer; margin: 0;
