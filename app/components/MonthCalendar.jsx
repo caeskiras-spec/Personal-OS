@@ -78,7 +78,7 @@ export default function CompactMonthCalendar({ year, month, dayMap, today, onDay
           return (
             <div
               key={ds}
-              onClick={() => onDayClick?.(date)}
+              onClick={(e) => onDayClick?.(date, e.currentTarget.getBoundingClientRect())}
               className={`h-9 flex flex-col items-center justify-start pt-1 rounded-md cursor-pointer transition-colors ${
                 isToday
                   ? 'bg-[#6c63ff]/10 hover:bg-[#6c63ff]/15'

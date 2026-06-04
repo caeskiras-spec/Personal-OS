@@ -21,7 +21,8 @@ import { projectsRepo }             from '../../lib/db/projects'
 import {
   normalizeTaskEvents, normalizeHabitEvents, normalizeWorkoutEvents, buildDayMap,
 } from '../../lib/calendar-selectors'
-import CompactMonthCalendar, { MONTHS, getMonthCells } from './MonthCalendar'
+import CompactMonthCalendar, { MONTHS, localStr } from './MonthCalendar'
+import DayPopover from './DayPopover'
 import { getTodayAndOverdue, getTodayStr } from '../../lib/tasks-selectors'
 import { isScheduledToday }         from '../../lib/habits-selectors'
 import { getSessionsToday, sumMinutes } from '../../lib/focus-selectors'
@@ -754,23 +755,35 @@ function ProjectsWidget() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// WIDGET: CALENDAR — compact month grid mirroring the Calendar module
+// WIDGET: CALENDAR — compact month grid + day popover
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const MONTHS_SHORT = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек']
 
 function CalendarWidget() {
   const { userId } = useOS()
-  const router = useRouter()
 
+  // ── primary data (for grid dots) ──
   const [tasks,       setTasks]       = useState([])
   const [habits,      setHabits]      = useState([])
   const [completions, setCompletions] = useState({})
   const [workouts,    setWorkouts]    = useState([])
   const [loading,     setLoading]     = useState(true)
   const [error,       setError]       = useState(false)
-  const [current,     setCurrent]     = useState(() => new Date())
 
+  // ── extra data (lazy-loaded on first day click, for popover) ──
+  const [foodEntries,  setFoodEntries]  = useState([])
+  const [sleepEntries, setSleepEntries] = useState([])
+  const [transactions, setTransactions] = useState([])
+  const [goals,        setGoals]        = useState([])
+  const extraLoadedRef = useRef(false)
+
+  // ── ui state ──
+  const [current,      setCurrent]      = useState(() => new Date())
+  const [selectedDate, setSelectedDate] = useState(null)
+  const [anchorRect,   setAnchorRect]   = useState(null)
+
+  // Load primary data
   useEffect(() => {
     if (!userId) return
     async function load() {
@@ -791,6 +804,21 @@ function CalendarWidget() {
     load()
   }, [userId])
 
+  // Lazy-load extra data for popover (on first day click)
+  const loadExtra = useCallback(async () => {
+    if (extraLoadedRef.current || !userId) return
+    extraLoadedRef.current = true
+    try {
+      const [food, sleep, txs, gs] = await Promise.all([
+        foodEntriesRepo.listAll(userId),
+        sleepRepo.list(userId),
+        transactionsRepo.list(userId),
+        goalsRepo.list(userId),
+      ])
+      setFoodEntries(food); setSleepEntries(sleep); setTransactions(txs); setGoals(gs)
+    } catch { /* silent — popover shows partial data */ }
+  }, [userId])
+
   const today = getTodayStr()
 
   const dayMap = useMemo(() => buildDayMap([
@@ -798,6 +826,30 @@ function CalendarWidget() {
     ...normalizeHabitEvents(habits, completions),
     ...normalizeWorkoutEvents(workouts),
   ]), [tasks, habits, completions, workouts])
+
+  // Derive full day data for the popover
+  const popoverDayData = useMemo(() => {
+    if (!selectedDate) return null
+    const ds = localStr(selectedDate)
+
+    const dayFood = foodEntries.filter(f => f.date === ds)
+    const food = dayFood.length > 0 ? {
+      calories: dayFood.reduce((s, f) => s + (f.calories ?? 0), 0),
+      protein:  dayFood.reduce((s, f) => s + (f.protein  ?? 0), 0),
+      fat:      dayFood.reduce((s, f) => s + (f.fat      ?? 0), 0),
+      carbs:    dayFood.reduce((s, f) => s + (f.carbs    ?? 0), 0),
+    } : null
+
+    return {
+      tasks:        tasks.filter(t => t.due_date === ds),
+      habits:       habits.filter(h => (completions[h.id] ?? []).includes(ds)),
+      workouts:     workouts.filter(w => w.date === ds),
+      food,
+      sleep:        sleepEntries.find(s => s.date === ds) ?? null,
+      transactions: transactions.filter(t => t.date === ds),
+      goals:        goals.filter(g => g.deadline === ds),
+    }
+  }, [selectedDate, tasks, habits, completions, workouts, foodEntries, sleepEntries, transactions, goals])
 
   const year  = current.getFullYear()
   const month = current.getMonth()
@@ -809,7 +861,18 @@ function CalendarWidget() {
 
   const goToday = (e) => { e.stopPropagation(); setCurrent(new Date()) }
 
-  // Compact skeleton: weekday row + 5 week rows
+  const handleDayClick = useCallback((date, rect) => {
+    setSelectedDate(date)
+    setAnchorRect(rect)
+    loadExtra()
+  }, [loadExtra])
+
+  const closePopover = useCallback(() => {
+    setSelectedDate(null)
+    setAnchorRect(null)
+  }, [])
+
+  // Compact skeleton
   const CalSkeleton = () => (
     <div className="flex flex-col gap-0.5 h-full">
       <div className="grid grid-cols-7 gap-px mb-0.5">
@@ -824,34 +887,48 @@ function CalendarWidget() {
   )
 
   return (
-    <WidgetCard modId="calendar" title="Календарь">
-      {loading ? <CalSkeleton /> : error ? <WidgetError /> : (
-        <div className="h-full flex flex-col gap-1.5">
-          {/* Month navigation */}
-          <div className="flex items-center justify-between shrink-0">
-            <button onClick={e => navigate(-1, e)} className="p-0.5 rounded text-text-7 hover:text-text transition-colors">
-              <ChevronLeft className="w-3.5 h-3.5" />
-            </button>
-            <button onClick={goToday} className="text-[10px] text-text-6 hover:text-[#6c63ff] transition-colors font-medium">
-              {MONTHS_SHORT[month]} {year}
-            </button>
-            <button onClick={e => navigate(1, e)} className="p-0.5 rounded text-text-7 hover:text-text transition-colors">
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
+    <>
+      <WidgetCard modId="calendar" title="Календарь">
+        {loading ? <CalSkeleton /> : error ? <WidgetError /> : (
+          <div className="h-full flex flex-col gap-1.5">
+            {/* Month navigation */}
+            <div className="flex items-center justify-between shrink-0">
+              <button onClick={e => navigate(-1, e)} className="p-0.5 rounded text-text-7 hover:text-text transition-colors">
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={goToday} className="text-[10px] text-text-6 hover:text-[#6c63ff] transition-colors font-medium">
+                {MONTHS_SHORT[month]} {year}
+              </button>
+              <button onClick={e => navigate(1, e)} className="p-0.5 rounded text-text-7 hover:text-text transition-colors">
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            {/* Compact month grid — clicks open the day popover */}
+            <div className="flex-1 min-h-0">
+              <CompactMonthCalendar
+                year={year}
+                month={month}
+                dayMap={dayMap}
+                today={today}
+                onDayClick={handleDayClick}
+              />
+            </div>
           </div>
-          {/* Compact month grid */}
-          <div className="flex-1 min-h-0">
-            <CompactMonthCalendar
-              year={year}
-              month={month}
-              dayMap={dayMap}
-              today={today}
-              onDayClick={() => router.push('/modules/calendar')}
-            />
-          </div>
-        </div>
+        )}
+      </WidgetCard>
+
+      {/* Day popover rendered via portal — outside the widget DOM tree */}
+      {selectedDate && popoverDayData && (
+        <DayPopover
+          date={selectedDate}
+          dateStr={localStr(selectedDate)}
+          today={today}
+          anchor={anchorRect}
+          dayData={popoverDayData}
+          onClose={closePopover}
+        />
       )}
-    </WidgetCard>
+    </>
   )
 }
 
