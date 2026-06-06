@@ -966,7 +966,7 @@ export default function HomeScreen() {
   const widgetModules = activeModules.filter(id => id in WIDGET_MAP)
 
   return (
-    <div className="p-6 sm:p-8 max-w-6xl mx-auto animate-fade-in">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto animate-fade-in">
       {/* Header */}
       <div className="mb-8">
         <p className="text-text-6 text-sm capitalize">{today}</p>

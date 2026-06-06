@@ -1004,7 +1004,7 @@ export default function FitnessModule({ module: mod }) {
   // ── Render ──
 
   return (
-    <div className="p-8 max-w-5xl mx-auto animate-fade-in">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto animate-fade-in">
       {toast && <Toast msg={toast} onClose={() => setToast(null)} />}
 
       {/* ── Header ── */}

@@ -363,7 +363,7 @@ function SleepCard({ entry, onRemove, onUpdate }) {
 // ─── Loading Skeleton ─────────────────────────────────────────────────────────
 function LoadingSkeleton() {
   return (
-    <div className="flex gap-6 p-8">
+    <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 p-4 sm:p-8">
       <div className="w-[220px] shrink-0 h-64 bg-card border border-border-2 rounded-xl animate-pulse" />
       <div className="flex-1 flex flex-col gap-4">
         {[1,2,3].map(i => <div key={i} className="h-20 bg-card border border-border-2 rounded-xl animate-pulse" />)}

@@ -593,7 +593,7 @@ export default function JournalModule() {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   if (loading) return (
-    <div className="px-8 pt-8 flex flex-col gap-3">
+    <div className="px-4 sm:px-8 pt-5 sm:pt-8 flex flex-col gap-3">
       {[1,2,3].map(i => <div key={i} className="h-24 bg-card border border-border-2 rounded-xl animate-pulse" />)}
     </div>
   )
@@ -617,7 +617,7 @@ export default function JournalModule() {
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
 
         {/* Header */}
-        <div className="px-8 pt-8 pb-4 border-b border-surface shrink-0">
+        <div className="px-4 sm:px-8 pt-5 sm:pt-8 pb-4 border-b border-surface shrink-0">
           <div className="flex items-center justify-between mb-5">
             <div>
               <h1 className="text-2xl font-bold text-text">Дневник</h1>
@@ -709,7 +709,7 @@ export default function JournalModule() {
         </div>
 
         {/* List */}
-        <div className="flex-1 overflow-y-auto px-8 py-5">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-4 sm:py-5">
           {filtered.length === 0 ? (
             hasFilter ? (
               // no-results state: filter active but nothing matches

@@ -16,7 +16,7 @@ export default function DashboardContent() {
   };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <p className="text-gray-500 text-sm font-medium mb-1">{greeting()}</p>
@@ -24,7 +24,7 @@ export default function DashboardContent() {
       </div>
 
       {/* Stats bar */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <div className="bg-emerald-50 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-1">
             <Zap size={16} className="text-emerald-500" />

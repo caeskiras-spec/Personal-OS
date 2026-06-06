@@ -24,7 +24,7 @@ export default function SettingsScreen() {
   }
 
   return (
-    <div className="p-8 max-w-2xl mx-auto animate-fade-in">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto animate-fade-in">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-text">Настройки</h1>
         <p className="text-subtle mt-1">Управление системой</p>
