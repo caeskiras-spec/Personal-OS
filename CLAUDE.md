@@ -79,8 +79,16 @@
 - Финансы: «Импортировать выписку» (на будущее — анти-дубль через import_hash + авто-категоризация).
 Клик по такой кнопке показывает «Функция в разработке».
 
+## Онбординг
+- Флоу: новый пользователь (нет строки профиля ИЛИ onboarding_completed = false) → редирект на /onboarding после логина (AuthScreen проверяет profileRepo.get → если !onboarding_completed → router.replace('/onboarding')). Существующие пользователи (onboarding_completed = true) попадают сразу на /home.
+- Гейтинг в самом /onboarding: при маунте проверяет profileRepo.get; если already completed → router.replace('/home') (нельзя вернуться руками). Нет строки профиля = нужен онбординг.
+- Мастер (app/components/OnboardingClient.jsx): 5 шагов — 0:Приветствие (display_name + username), 1:Модули (user_modules), 2:Профиль здоровья (gender/birth_date/height_cm/weight_kg/activity_level, опционально, «Пропустить»), 3:Тема (user_profiles.theme, применяется live), 4:Готово (onboarding_completed=true через completeOnboarding).
+- Сохранение пошаговое: каждый шаг пишет в БД через profileRepo.upsert / userModulesRepo.upsert до перехода на следующий. Случайная перезагрузка не сбрасывает уже введённое.
+- Таблицы/поля: user_profiles (display_name, username, gender, birth_date, height_cm, weight_kg, activity_level, theme, onboarding_completed); user_modules (module_id, is_active, position).
+- Миграция 0020 (supabase/migrations/0020_onboarding_backfill.sql): ADD COLUMN IF NOT EXISTS onboarding_completed + UPDATE SET onboarding_completed=true для всех существующих пользователей (бэкфилл).
+
 ## Миграции
-- Последовательные пронумерованные файлы (на данный момент до 0016). Идемпотентность: IF NOT EXISTS / ADD COLUMN IF NOT EXISTS / DROP POLICY IF EXISTS.
+- Последовательные пронумерованные файлы (на данный момент до 0020). Идемпотентность: IF NOT EXISTS / ADD COLUMN IF NOT EXISTS / DROP POLICY IF EXISTS.
 - Новый модуль = новая миграция + lib/db + lib/selectors + компонент + регистрация модуля + (опц.) слой календаря.
 
 ## Деплой / окружение
