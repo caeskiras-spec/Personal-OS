@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Plus, X, Check, AlertCircle, Edit2, Target, Watch } from 'lucide-react'
 import EmptyState from '../EmptyState'
 import { useOS }              from '../../../lib/store'
+import { MODULE_ICONS }       from '../../../lib/moduleIcons'
 import { workoutsRepo }       from '../../../lib/db/workouts'
 import { workoutTypesRepo }   from '../../../lib/db/workoutTypes'
 import { profileRepo }        from '../../../lib/db/profile'
@@ -1009,14 +1010,19 @@ export default function FitnessModule({ module: mod }) {
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between mb-6">
-        <div>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: MODULE_ICONS.fitness.color + '20' }}>
+            <MODULE_ICONS.fitness.Icon size={20} style={{ color: MODULE_ICONS.fitness.color }} />
+          </div>
+          <div>
           <h1 className="text-2xl font-bold text-text">Тренировки</h1>
           <p className="text-subtle text-sm mt-0.5">
             {stats.count} {statPeriod === 'week' ? 'за неделю' : 'за месяц'}
             {stats.duration > 0 && ` · ${stats.duration} мин`}
             {stats.calories > 0 && ` · ${stats.calories} ккал`}
           </p>
-        </div>
+        </div></div>
         <button
           onClick={() => setPanel(p => (p?.mode === 'add' && !p.date) ? null : { mode: 'add', date: getTodayStr() })}
           className="flex items-center gap-2 bg-accent hover:bg-accent-light text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"

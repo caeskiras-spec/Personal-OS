@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { MODULE_ICONS } from '../../../lib/moduleIcons'
 import EmptyState from '../EmptyState'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
@@ -619,11 +620,17 @@ export default function JournalModule() {
         {/* Header */}
         <div className="px-4 sm:px-8 pt-5 sm:pt-8 pb-4 border-b border-surface shrink-0">
           <div className="flex items-center justify-between mb-5">
-            <div>
-              <h1 className="text-2xl font-bold text-text">Дневник</h1>
-              <p className="text-subtle text-sm mt-0.5">
-                {entries.length} {entries.length === 1 ? 'запись' : entries.length < 5 ? 'записи' : 'записей'}
-              </p>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: MODULE_ICONS.journal.color + '20' }}>
+                <MODULE_ICONS.journal.Icon size={20} style={{ color: MODULE_ICONS.journal.color }} />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-text">Дневник</h1>
+                <p className="text-subtle text-sm mt-0.5">
+                  {entries.length} {entries.length === 1 ? 'запись' : entries.length < 5 ? 'записи' : 'записей'}
+                </p>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <button onClick={() => setShowMgr(true)} title="Управление тегами"

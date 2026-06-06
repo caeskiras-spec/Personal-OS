@@ -6,6 +6,7 @@ import {
   Plus, X, AlertCircle, ChevronLeft, ChevronRight, Star, Watch, Trash2,
 } from 'lucide-react'
 import { useOS }       from '../../../lib/store'
+import { MODULE_ICONS } from '../../../lib/moduleIcons'
 import { sleepRepo }   from '../../../lib/db/sleep'
 import { profileRepo } from '../../../lib/db/profile'
 import { getTodayStr } from '../../../lib/tasks-selectors'
@@ -468,8 +469,9 @@ export default function SleepModule() {
 
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: SLEEP_COLOR + '25', color: SLEEP_COLOR }}>
-          <span className="text-xl">◐</span>
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+          style={{ background: MODULE_ICONS.sleep.color + '20' }}>
+          <MODULE_ICONS.sleep.Icon size={20} style={{ color: MODULE_ICONS.sleep.color }} />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-text">Сон</h1>

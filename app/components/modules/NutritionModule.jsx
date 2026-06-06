@@ -7,6 +7,7 @@ import {
   Camera, Trash2, Heart, Clock,
 } from 'lucide-react'
 import { useOS } from '../../../lib/store'
+import { MODULE_ICONS } from '../../../lib/moduleIcons'
 import { foodEntriesRepo }   from '../../../lib/db/foodEntries'
 import { foodFavoritesRepo } from '../../../lib/db/foodFavorites'
 import { profileRepo }       from '../../../lib/db/profile'
@@ -771,8 +772,9 @@ export default function NutritionModule() {
 
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#10b981' + '25', color: '#10b981' }}>
-          <span className="text-xl">◑</span>
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+          style={{ background: MODULE_ICONS.nutrition.color + '20' }}>
+          <MODULE_ICONS.nutrition.Icon size={20} style={{ color: MODULE_ICONS.nutrition.color }} />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-text">Питание</h1>

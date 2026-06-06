@@ -7,6 +7,7 @@ import {
   Trash2, Edit2, Upload, Check,
 } from 'lucide-react'
 import { useOS }                from '../../../lib/store'
+import { MODULE_ICONS }         from '../../../lib/moduleIcons'
 import { transactionsRepo }     from '../../../lib/db/transactions'
 import { financeCategoriesRepo } from '../../../lib/db/financeCategories'
 import { financeBudgetsRepo }   from '../../../lib/db/financeBudgets'
@@ -844,8 +845,9 @@ export default function FinanceModule() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{ backgroundColor: ACCENT + '25', color: ACCENT }}>
-            ◈
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: MODULE_ICONS.finance.color + '20' }}>
+            <MODULE_ICONS.finance.Icon size={20} style={{ color: MODULE_ICONS.finance.color }} />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-text">Финансы</h1>

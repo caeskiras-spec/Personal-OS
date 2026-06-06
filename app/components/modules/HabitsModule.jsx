@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import EmptyState from '../EmptyState'
 import { Check, X, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react'
 import { useOS } from '../../../lib/store'
+import { MODULE_ICONS } from '../../../lib/moduleIcons'
 import { habitsRepo } from '../../../lib/db/habits'
 import { habitCompletionsRepo } from '../../../lib/db/habitCompletions'
 import { getTodayStr } from '../../../lib/tasks-selectors'
@@ -676,7 +677,10 @@ export default function HabitsModule() {
 
       {/* Header — full width */}
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-xl">◎</div>
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+          style={{ background: MODULE_ICONS.habits.color + '20' }}>
+          <MODULE_ICONS.habits.Icon size={20} style={{ color: MODULE_ICONS.habits.color }} />
+        </div>
         <div>
           <h1 className="text-2xl font-bold text-text">Привычки</h1>
           <p className="text-subtle text-sm">

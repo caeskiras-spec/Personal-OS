@@ -7,6 +7,7 @@ import {
   AlertCircle, Plus, Repeat, List, CalendarDays,
 } from 'lucide-react'
 import { useOS } from '../../../lib/store'
+import { MODULE_ICONS } from '../../../lib/moduleIcons'
 import { tasksRepo }    from '../../../lib/db/tasks'
 import { subtasksRepo } from '../../../lib/db/subtasks'
 import { projectsRepo, PROJECT_COLORS } from '../../../lib/db/projects'
@@ -1399,8 +1400,9 @@ export default function TasksModule() {
 
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center">
-          <Check className="w-5 h-5 text-accent" />
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+          style={{ background: MODULE_ICONS.tasks.color + '20' }}>
+          <MODULE_ICONS.tasks.Icon size={20} style={{ color: MODULE_ICONS.tasks.color }} />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-text">Задачи</h1>

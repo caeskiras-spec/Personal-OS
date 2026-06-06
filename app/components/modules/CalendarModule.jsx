@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { ChevronLeft, ChevronRight, AlertCircle, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useOS }                from '../../../lib/store'
+import { MODULE_ICONS }         from '../../../lib/moduleIcons'
 import { tasksRepo }            from '../../../lib/db/tasks'
 import { habitsRepo }           from '../../../lib/db/habits'
 import { habitCompletionsRepo } from '../../../lib/db/habitCompletions'
@@ -585,8 +586,9 @@ export default function CalendarModule() {
 
       {/* Module header */}
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{ backgroundColor: '#0891b215', color: '#0891b2' }}>
-          ▦
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+          style={{ background: MODULE_ICONS.calendar.color + '20' }}>
+          <MODULE_ICONS.calendar.Icon size={20} style={{ color: MODULE_ICONS.calendar.color }} />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-text">Календарь</h1>

@@ -8,6 +8,7 @@ import {
   AlertCircle, GripVertical, Tag,
 } from 'lucide-react'
 import { useOS }                from '../../../lib/store'
+import { MODULE_ICONS }         from '../../../lib/moduleIcons'
 import { goalsRepo }            from '../../../lib/db/goals'
 import { goalMilestonesRepo }   from '../../../lib/db/goalMilestones'
 import { goalCategoriesRepo }   from '../../../lib/db/goalCategories'
@@ -793,10 +794,15 @@ export default function GoalsModule() {
         {/* Header */}
         <div className="px-4 sm:px-8 pt-5 sm:pt-8 pb-4 border-b border-surface shrink-0">
           <div className="flex items-center justify-between mb-5">
-            <div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: MODULE_ICONS.goals.color + '20' }}>
+                <MODULE_ICONS.goals.Icon size={20} style={{ color: MODULE_ICONS.goals.color }} />
+              </div>
+              <div>
               <h1 className="text-2xl font-bold text-text">Цели</h1>
               <p className="text-subtle text-sm mt-0.5">{byStatus.active.length} активных</p>
-            </div>
+            </div></div>
             <button onClick={() => { setCreating(true); setPanel('new') }}
               className="flex items-center gap-2 px-4 py-2 bg-[#6c63ff] hover:bg-[#8b85ff] text-white text-sm font-medium rounded-xl transition-colors"
             ><Plus className="w-4 h-4" /> Цель</button>

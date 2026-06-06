@@ -7,6 +7,7 @@ import {
   Settings, Bell, BellOff, Trash2, AlertCircle, Info,
 } from 'lucide-react'
 import { useOS }               from '../../../lib/store'
+import { MODULE_ICONS }        from '../../../lib/moduleIcons'
 import { focusSessionsRepo }   from '../../../lib/db/focusSessions'
 import { profileRepo }         from '../../../lib/db/profile'
 import { tasksRepo }           from '../../../lib/db/tasks'
@@ -444,13 +445,18 @@ export default function FocusModule() {
 
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: MODULE_ICONS.focus.color + '20' }}>
+              <MODULE_ICONS.focus.Icon size={20} style={{ color: MODULE_ICONS.focus.color }} />
+            </div>
+            <div>
             <h1 className="text-2xl font-bold text-text">Фокус</h1>
             <div className="flex items-center gap-1.5 mt-0.5">
               <p className="text-subtle text-sm">Техника Помодоро</p>
               <PomodoroHint />
             </div>
-          </div>
+          </div></div>
           <div className="flex items-center gap-2">
             <button onClick={() => setSoundOn(v => !v)} title={soundOn ? 'Звук вкл' : 'Звук выкл'}
               className={`p-2 rounded-xl border transition-colors ${soundOn ? 'border-[#6c63ff]/40 text-[#6c63ff] bg-[#6c63ff]/5' : 'border-border text-text-7 hover:border-border-2 hover:text-subtle'}`}
