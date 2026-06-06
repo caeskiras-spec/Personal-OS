@@ -53,6 +53,7 @@ function buildBuckets(period, from) {
   const MONTHS = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек']
 
   if (period === 'week') {
+    // 7 daily buckets — label = weekday name
     const fromD = new Date(from + 'T00:00:00')
     return Array.from({ length: 7 }, (_, i) => {
       const d = new Date(fromD); d.setDate(fromD.getDate() + i)
@@ -61,16 +62,18 @@ function buildBuckets(period, from) {
     })
   }
   if (period === 'month') {
-    const fromD = new Date(from + 'T00:00:00')
-    const buckets = []
-    for (let w = 0; w < 6; w++) {
-      const ws = new Date(fromD); ws.setDate(fromD.getDate() + w * 7)
-      if (localStr(ws) > today) break
-      const we = new Date(ws); we.setDate(ws.getDate() + 6)
-      buckets.push({ label: `Н${w+1}`, from: localStr(ws), to: localStr(we) > today ? today : localStr(we) })
+    // daily buckets for the full calendar month — label = day number
+    const fromD  = new Date(from + 'T00:00:00')
+    const result = []
+    const cur    = new Date(fromD)
+    while (localStr(cur) <= today) {
+      const s = localStr(cur)
+      result.push({ label: String(cur.getDate()), from: s, to: s, future: false })
+      cur.setDate(cur.getDate() + 1)
     }
-    return buckets
+    return result
   }
+  // all-time: last 12 calendar months
   return Array.from({ length: 12 }, (_, i) => {
     const m    = new Date(todayD.getFullYear(), todayD.getMonth() - (11 - i), 1)
     const mEnd = new Date(todayD.getFullYear(), todayD.getMonth() - (11 - i) + 1, 0)
@@ -153,13 +156,14 @@ function ChartTip({ active, payload, label, fmt = v => v, names = [] }) {
   )
 }
 
-// Shared XAxis style
-function xAxisProps() {
+// Shared XAxis style — interval thins labels for month (30 pts) automatically
+function xAxisProps(n = 0) {
   return {
     tick: { fontSize: 9, fill: 'var(--color-text-8)', fontFamily: 'inherit' },
     tickLine: false,
     axisLine: false,
-    interval: 'preserveStartEnd',
+    // show ~6 labels regardless of bucket count; for ≤10 show all
+    interval: n > 10 ? Math.floor(n / 6) : 0,
   }
 }
 
@@ -231,7 +235,7 @@ function TasksWidget({ tasks, buckets, range }) {
         ? <ChartEmpty text="Задач за период нет" />
         : <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} barCategoryGap="30%">
-              <XAxis dataKey="label" {...xAxisProps()} />
+              <XAxis dataKey="label" {...xAxisProps(chartData.length)} />
               <Tooltip content={<ChartTip fmt={v => `${v} задач`} />} cursor={{ fill: mi?.color + '15' }} />
               <Bar dataKey="value" radius={[3,3,0,0]}
                 fill={mi?.color}
@@ -292,13 +296,14 @@ function HabitsWidget({ habits, completions, buckets, range }) {
                   <stop offset="95%" stopColor={mi?.color} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="label" {...xAxisProps()} />
+              <XAxis dataKey="label" {...xAxisProps(chartData.length)} />
               <Tooltip content={<ChartTip fmt={v => `${v}%`} />} cursor={{ stroke: mi?.color + '40', strokeWidth: 1 }} />
               <Area
                 type="monotone" dataKey="value"
                 stroke={mi?.color} strokeWidth={1.5}
                 fill="url(#habitsGrad)"
-                dot={false} activeDot={{ r: 3, fill: mi?.color }}
+                dot={chartData.length <= 2 ? { r: 3, fill: mi?.color } : false}
+                activeDot={{ r: 3, fill: mi?.color }}
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -341,13 +346,14 @@ function FocusWidget({ sessions, profile, buckets, range }) {
                   <stop offset="95%" stopColor={mi?.color} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="label" {...xAxisProps()} />
+              <XAxis dataKey="label" {...xAxisProps(chartData.length)} />
               <Tooltip content={<ChartTip fmt={fmtM} />} cursor={{ stroke: mi?.color + '40', strokeWidth: 1 }} />
               <Area
                 type="monotone" dataKey="value"
                 stroke={mi?.color} strokeWidth={1.5}
                 fill="url(#focusGrad)"
-                dot={false} activeDot={{ r: 3, fill: mi?.color }}
+                dot={chartData.length <= 2 ? { r: 3, fill: mi?.color } : false}
+                activeDot={{ r: 3, fill: mi?.color }}
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -395,13 +401,14 @@ function NutritionWidget({ food, profile, buckets, range }) {
                   <stop offset="95%" stopColor={mi?.color} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="label" {...xAxisProps()} />
+              <XAxis dataKey="label" {...xAxisProps(chartData.length)} />
               <Tooltip content={<ChartTip fmt={v => `${v} ккал`} />} cursor={{ stroke: mi?.color + '40', strokeWidth: 1 }} />
               <Area
                 type="monotone" dataKey="value"
                 stroke={mi?.color} strokeWidth={1.5}
                 fill="url(#nutritionGrad)"
-                dot={false} activeDot={{ r: 3, fill: mi?.color }}
+                dot={chartData.length <= 2 ? { r: 3, fill: mi?.color } : false}
+                activeDot={{ r: 3, fill: mi?.color }}
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -450,13 +457,14 @@ function SleepWidget({ sleep, buckets, range }) {
                   <stop offset="95%" stopColor={mi?.color} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="label" {...xAxisProps()} />
+              <XAxis dataKey="label" {...xAxisProps(chartData.length)} />
               <Tooltip content={<ChartTip fmt={v => fmtDuration(v)} />} cursor={{ stroke: mi?.color + '40', strokeWidth: 1 }} />
               <Area
                 type="monotone" dataKey="value"
                 stroke={mi?.color} strokeWidth={1.5}
                 fill="url(#sleepGrad)"
-                dot={false} activeDot={{ r: 3, fill: mi?.color }}
+                dot={chartData.length <= 2 ? { r: 3, fill: mi?.color } : false}
+                activeDot={{ r: 3, fill: mi?.color }}
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -490,7 +498,7 @@ function FitnessWidget({ workouts, buckets, range }) {
         ? <ChartEmpty text="Нет тренировок за период" />
         : <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} barCategoryGap="30%">
-              <XAxis dataKey="label" {...xAxisProps()} />
+              <XAxis dataKey="label" {...xAxisProps(chartData.length)} />
               <Tooltip content={<ChartTip fmt={v => `${v} тр.`} />} cursor={{ fill: mi?.color + '15' }} />
               <Bar dataKey="value" radius={[3,3,0,0]} fill={mi?.color} fillOpacity={0.85} />
             </BarChart>
@@ -541,15 +549,19 @@ function FinanceWidget({ transactions, buckets, range }) {
                   <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="label" {...xAxisProps()} />
+              <XAxis dataKey="label" {...xAxisProps(chartData.length)} />
               <Tooltip
                 content={<ChartTip fmt={v => `${fmtMoney(v)} ₽`} names={['Доходы', 'Расходы']} />}
                 cursor={{ stroke: '#ffffff20', strokeWidth: 1 }}
               />
               <Area type="monotone" dataKey="income"  stroke="#22c55e" strokeWidth={1.5}
-                fill="url(#incomeGrad)"  dot={false} activeDot={{ r: 3, fill: '#22c55e' }} />
+                fill="url(#incomeGrad)"
+                dot={chartData.length <= 2 ? { r: 3, fill: '#22c55e' } : false}
+                activeDot={{ r: 3, fill: '#22c55e' }} />
               <Area type="monotone" dataKey="expense" stroke="#ef4444" strokeWidth={1.5}
-                fill="url(#expenseGrad)" dot={false} activeDot={{ r: 3, fill: '#ef4444' }} />
+                fill="url(#expenseGrad)"
+                dot={chartData.length <= 2 ? { r: 3, fill: '#ef4444' } : false}
+                activeDot={{ r: 3, fill: '#ef4444' }} />
             </ComposedChart>
           </ResponsiveContainer>
       }
@@ -586,7 +598,7 @@ function GoalsWidget({ goals, milestones }) {
     ]}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={chartData} barCategoryGap="25%">
-          <XAxis dataKey="label" {...xAxisProps()} />
+          <XAxis dataKey="label" {...xAxisProps(chartData.length)} />
           <Tooltip
             content={({ active, payload }) => {
               if (!active || !payload?.length) return null
