@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { MODULE_ICONS } from '../../../lib/moduleIcons'
+import SidePanel from '../SidePanel'
 import EmptyState from '../EmptyState'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
@@ -413,7 +414,7 @@ function EditorPanel({ entry, tags, userId, onSave, onClose, onTagsChange }) {
   }
 
   return (
-    <div className="w-[440px] shrink-0 border-l border-border bg-panel flex flex-col h-full overflow-hidden">
+    <SidePanel panelClass="md:w-[440px]" onClose={onClose}>
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
         <span className="text-sm font-semibold text-text">{isNew ? 'Новая запись' : 'Редактирование'}</span>
@@ -498,7 +499,7 @@ function EditorPanel({ entry, tags, userId, onSave, onClose, onTagsChange }) {
           {saving ? 'Сохранение...' : 'Сохранить'}
         </button>
       </div>
-    </div>
+    </SidePanel>
   )
 }
 

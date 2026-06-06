@@ -485,26 +485,30 @@ function QuickAdd({ onAdd }) {
   }
 
   return (
-    <div className="bg-surface border border-border rounded-xl px-4 py-3 flex items-center gap-2">
-      <EmojiPicker value={emoji} onChange={setEmoji} />
-      <input
-        ref={inputRef}
-        type="text"
-        value={name}
-        onChange={e => setName(e.target.value)}
-        onKeyDown={e => e.key === 'Enter' && handleAdd()}
-        placeholder="Новая привычка..."
-        className="flex-1 bg-transparent text-sm text-text placeholder:text-subtle outline-none"
-      />
-      <ColorPicker value={color} onChange={setColor} />
-      <button
-        type="button"
-        onClick={handleAdd}
-        disabled={!name.trim()}
-        className="px-3 py-1.5 bg-accent hover:bg-accent-light disabled:bg-muted disabled:cursor-not-allowed text-white text-xs rounded-lg font-medium transition-colors shrink-0"
-      >
-        Добавить
-      </button>
+    <div className="bg-surface border border-border rounded-xl px-4 py-3 flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <EmojiPicker value={emoji} onChange={setEmoji} />
+        <input
+          ref={inputRef}
+          type="text"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          placeholder="Новая привычка..."
+          className="flex-1 min-w-0 bg-transparent text-sm text-text placeholder:text-subtle outline-none"
+        />
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="flex-1 min-w-0"><ColorPicker value={color} onChange={setColor} /></div>
+        <button
+          type="button"
+          onClick={handleAdd}
+          disabled={!name.trim()}
+          className="px-3 py-1.5 bg-accent hover:bg-accent-light disabled:bg-muted disabled:cursor-not-allowed text-white text-xs rounded-lg font-medium transition-colors shrink-0"
+        >
+          Добавить
+        </button>
+      </div>
     </div>
   )
 }

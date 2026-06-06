@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import EmptyState from '../EmptyState'
+import SidePanel from '../SidePanel'
 import {
   FolderOpen, Plus, X, Trash2, Edit2, Check,
   ChevronRight, AlertCircle, Circle, CheckCircle2,
@@ -215,7 +216,7 @@ function DetailPanel({ project, tasks, userId, onClose, onUpdate, onDelete, onTa
   }
 
   return (
-    <div className="w-[400px] shrink-0 border-l border-surface bg-panel flex flex-col h-full overflow-hidden">
+    <SidePanel panelClass="md:w-[400px]" onClose={onClose}>
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-border-1 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
@@ -335,7 +336,7 @@ function DetailPanel({ project, tasks, userId, onClose, onUpdate, onDelete, onTa
           )}
         </div>
       </div>
-    </div>
+    </SidePanel>
   )
 }
 
@@ -357,7 +358,7 @@ function CreatePanel({ userId, onSave, onClose }) {
   }
 
   return (
-    <div className="w-[400px] shrink-0 border-l border-surface bg-panel flex flex-col h-full overflow-hidden">
+    <SidePanel panelClass="md:w-[400px]" onClose={onClose}>
       <div className="flex items-center justify-between px-5 py-4 border-b border-border-1 shrink-0">
         <span className="text-sm font-semibold text-text">Новый проект</span>
         <button onClick={onClose} className="p-1.5 rounded-lg text-text-6 hover:text-text hover:bg-muted/10 transition-colors">
@@ -399,7 +400,7 @@ function CreatePanel({ userId, onSave, onClose }) {
           className="flex-[2] py-2.5 text-sm bg-[#6c63ff] hover:bg-[#8b85ff] text-white font-medium rounded-xl transition-colors disabled:opacity-40"
         >{saving ? 'Создание...' : 'Создать проект'}</button>
       </div>
-    </div>
+    </SidePanel>
   )
 }
 

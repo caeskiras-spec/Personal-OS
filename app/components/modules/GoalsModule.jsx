@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { useOS }                from '../../../lib/store'
 import { MODULE_ICONS }         from '../../../lib/moduleIcons'
+import SidePanel                from '../SidePanel'
 import { goalsRepo }            from '../../../lib/db/goals'
 import { goalMilestonesRepo }   from '../../../lib/db/goalMilestones'
 import { goalCategoriesRepo }   from '../../../lib/db/goalCategories'
@@ -524,7 +525,7 @@ function DetailPanel({ goal, milestones, categories, tasks, projects, habits, us
   }
 
   return (
-    <div className="w-[420px] shrink-0 border-l border-surface bg-panel flex flex-col h-full overflow-hidden">
+    <SidePanel panelClass="md:w-[420px]" onClose={onClose}>
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-border-1 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
@@ -665,7 +666,7 @@ function DetailPanel({ goal, milestones, categories, tasks, projects, habits, us
           </>
         )}
       </div>
-    </div>
+    </SidePanel>
   )
 }
 
@@ -881,7 +882,7 @@ export default function GoalsModule() {
 
       {/* ── Right panel ───────────────────────────────────────────────────── */}
       {panel === 'new' && (
-        <div className="w-[420px] shrink-0 border-l border-surface bg-panel flex flex-col h-full overflow-hidden">
+        <SidePanel panelClass="md:w-[420px]" onClose={() => { setPanel(null); setCreating(false) }}>
           <div className="flex items-center justify-between px-5 py-4 border-b border-border-1 shrink-0">
             <span className="text-sm font-semibold text-text">Новая цель</span>
             <button onClick={() => { setPanel(null); setCreating(false) }} className="p-1.5 rounded-lg text-text-6 hover:text-text hover:bg-muted/10 transition-colors">
@@ -897,7 +898,7 @@ export default function GoalsModule() {
               saving={savingNew}
             />
           </div>
-        </div>
+        </SidePanel>
       )}
       {panel && typeof panel === 'object' && (
         <DetailPanel

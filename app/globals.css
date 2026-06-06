@@ -87,6 +87,15 @@ html, body {
   height: 100%;
 }
 
+html {
+  overflow-x: clip;
+}
+
+/* Dev overflow detector: add data-overflow-debug to <html> to highlight wide elements */
+[data-overflow-debug] * {
+  outline: 1px solid hsla(0, 100%, 60%, 0.2);
+}
+
 /* ── iOS auto-zoom prevention: font-size must be >= 16px on mobile inputs ── */
 @media screen and (max-width: 767px) {
   input[type="text"],

@@ -868,10 +868,10 @@ export default function FinanceModule() {
         </button>
       </div>
 
-      <div className="flex gap-5 items-start">
+      <div className="flex flex-col md:flex-row gap-5 items-start">
 
         {/* ── Left: calendar + import ── */}
-        <div className="flex flex-col gap-4 shrink-0">
+        <div className="flex flex-col gap-4 w-full md:w-auto md:shrink-0">
           <FinanceCalendar
             transactions={transactions}
             selectedDate={selectedDate}

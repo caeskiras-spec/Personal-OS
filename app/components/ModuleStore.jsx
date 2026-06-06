@@ -268,7 +268,8 @@ export default function ModuleStore() {
 
         {/* ── Каталог по категориям ──────────────────────────────────────── */}
         {MODULE_CATEGORIES.map(cat => {
-          const mods = ALL_MODULES.filter(m => m.category === cat.id)
+          const mods = ALL_MODULES.filter(m => m.category === cat.id && !activeModules.includes(m.id))
+          if (mods.length === 0) return null
           return (
             <section key={cat.id}>
               <h2 className="text-[10px] uppercase tracking-widest mb-3"

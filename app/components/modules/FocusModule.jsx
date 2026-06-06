@@ -438,10 +438,10 @@ export default function FocusModule() {
   )
 
   return (
-    <div className="flex h-full overflow-hidden">
+    <div className="md:flex md:h-full md:overflow-hidden">
 
       {/* ── Left: Timer ──────────────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col overflow-y-auto px-8 py-8 gap-6 min-w-0">
+      <div className="flex flex-col md:flex-1 md:overflow-y-auto px-4 sm:px-8 py-6 sm:py-8 gap-6 min-w-0">
 
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -609,7 +609,7 @@ export default function FocusModule() {
       </div>
 
       {/* ── Right: Stats + History ────────────────────────────────────────────── */}
-      <div className="w-72 shrink-0 border-l border-surface flex flex-col overflow-hidden">
+      <div className="flex flex-col md:w-72 md:shrink-0 border-t md:border-t-0 md:border-l border-surface md:overflow-hidden">
         <div className="flex-1 overflow-y-auto flex flex-col gap-4 p-5">
 
           {/* Goal ring */}
