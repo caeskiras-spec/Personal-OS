@@ -105,7 +105,12 @@
 - Скролл-контейнер OSLayout: `h-[100dvh]` (не `100vh`) + `padding-bottom: env(safe-area-inset-bottom)` на `<main>` для safe-area (notch/home indicator). viewport meta: `viewportFit: 'cover'` в `export const viewport` в layout.js.
 - iOS-зум при фокусе на input: предотвращается через `font-size: 16px !important` на все input/textarea/select на мобиле (globals.css @media max-width:767px). НЕ использовать `maximum-scale` или `user-scalable=no`.
 - Выпадающие списки/поповеры не должны уезжать за правый край: Select.jsx — левая граница дропдауна clamped в `[8px, viewport − width − 8px]`; DatePicker.jsx — `alignRight` флаг, флипает на `right-0` если открытие слева выйдет за экран; FocusModule PomodoroHint tooltip — `max-w-[calc(100vw-2rem)]`; DayPopover — уже bottom-sheet на мобиле.
-- Горизонтальный скролл/layout shift не допускается — портальные дропдауны не добавляют ширину к странице.
+- Горизонтальный скролл/layout shift не допускается — `html { overflow-x: clip }` глобально. Портальные дропдауны не добавляют ширину к странице. Dev-хелпер: `data-overflow-debug` на `<html>` рисует красные outline на всех дочерних элементах.
+- Боковые панели (GoalsModule, JournalModule, ProjectsModule): `SidePanel` (app/components/SidePanel.jsx) — full-screen overlay на мобиле + backdrop, `md:relative md:w-[xxx] md:shrink-0 md:border-l` на десктопе.
+- Двухколоночные раскладки (Sleep/Nutrition/Finance): `flex flex-col md:flex-row` + левая колонка `w-full md:w-auto md:shrink-0`.
+- Фокус-модуль: таймер + панель статистики стекуются вертикально (`md:flex md:h-full`), разделитель `border-t md:border-t-0 md:border-l`.
+- HabitsModule QuickAdd: двухстрочный layout — первая строка emoji+input, вторая colorpicker+кнопка.
+- ModuleStore каталог: активные модули скрыты из категорий (не дублируются); пустые категории не рендерятся.
 
 ## Грабли (известные)
 - После drag&drop в сайдбаре сбрасывать драг-состояние, иначе навигация виснет до ре-рендера. Порядок модулей персистить в user_modules.position.
