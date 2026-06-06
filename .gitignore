@@ -43,3 +43,7 @@ Thumbs.db
 *.pem
 
 *.err
+
+# Claude local settings (may contain secrets)
+.claude/settings.local.json
+.claude/
