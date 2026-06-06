@@ -1,10 +1,11 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import EmptyState from '../EmptyState'
+import SidePanel from '../SidePanel'
 import {
-  Target, Play, Pause, RotateCcw, SkipForward,
-  Settings, Bell, BellOff, Trash2, AlertCircle, Info,
+  Play, Pause, RotateCcw, SkipForward,
+  Settings, Bell, BellOff, Trash2, AlertCircle, Info, X,
 } from 'lucide-react'
 import { useOS }               from '../../../lib/store'
 import { MODULE_ICONS }        from '../../../lib/moduleIcons'
@@ -177,6 +178,26 @@ function NumInput({ label, value, min, max, onChange }) {
   )
 }
 
+// ─── SettingsContent ───────────────────────────────────────────────────────────
+
+function SettingsContent({ settings, saveSettings, savingConf }) {
+  return (
+    <div className="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-4">
+      <div className="grid grid-cols-2 gap-3">
+        <NumInput label="Фокус (мин)"         value={settings.workMin}          min={1}  max={120} onChange={v => saveSettings({ ...settings, workMin: v })} />
+        <NumInput label="Перерыв (мин)"        value={settings.breakMin}         min={1}  max={60}  onChange={v => saveSettings({ ...settings, breakMin: v })} />
+        <NumInput label="Длинный пер. (мин)"   value={settings.longBreakMin}     min={1}  max={90}  onChange={v => saveSettings({ ...settings, longBreakMin: v })} />
+        <NumInput label="Циклов до длинного"   value={settings.cyclesBeforeLong} min={1}  max={10}  onChange={v => saveSettings({ ...settings, cyclesBeforeLong: v })} />
+        <NumInput label="Цель дня (мин)"       value={settings.goalMin}          min={0}  max={480} onChange={v => saveSettings({ ...settings, goalMin: v })} />
+      </div>
+      <p className="text-xs text-text-7 leading-relaxed">
+        Настройки сохраняются автоматически. Текущий запущенный таймер не прерывается.
+      </p>
+      {savingConf && <p className="text-xs text-text-7 animate-pulse">Сохраняется...</p>}
+    </div>
+  )
+}
+
 // ─── FocusModule ───────────────────────────────────────────────────────────────
 
 export default function FocusModule() {
@@ -203,7 +224,9 @@ export default function FocusModule() {
   const [tick,         setTick]         = useState(0)      // forces remaining recompute
 
   // ── UI ───────────────────────────────────────────────────────────────────────
-  const [soundOn,      setSoundOn]      = useState(true)
+  const [soundOn,      setSoundOn]      = useState(() => {
+    try { return localStorage.getItem('focus_sound') !== 'off' } catch { return true }
+  })
   const [notifOn,      setNotifOn]      = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [statsView,    setStatsView]    = useState('day')
@@ -402,6 +425,13 @@ export default function FocusModule() {
     catch { setSessions(snap) }
   }, [sessions])
 
+  // ── Sound toggle (persisted to localStorage) ──────────────────────────────────
+  const handleSoundToggle = () => {
+    const next = !soundOn
+    setSoundOn(next)
+    try { localStorage.setItem('focus_sound', next ? 'on' : 'off') } catch { /* noop */ }
+  }
+
   // ── Notification toggle ───────────────────────────────────────────────────────
   const handleNotifToggle = async () => {
     if (notifOn) { setNotifOn(false); return }
@@ -444,31 +474,52 @@ export default function FocusModule() {
       <div className="flex flex-col md:flex-1 md:overflow-y-auto px-4 sm:px-8 py-6 sm:py-8 gap-6 min-w-0">
 
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: MODULE_ICONS.focus.color + '20' }}>
-              <MODULE_ICONS.focus.Icon size={20} style={{ color: MODULE_ICONS.focus.color }} />
-            </div>
-            <div>
-            <h1 className="text-2xl font-bold text-text">Фокус</h1>
-            <div className="flex items-center gap-1.5 mt-0.5">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: MODULE_ICONS.focus.color + '20' }}>
+            <MODULE_ICONS.focus.Icon size={20} style={{ color: MODULE_ICONS.focus.color }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-text leading-tight">Фокус</h1>
+            <div className="flex items-center gap-1.5">
               <p className="text-subtle text-sm">Техника Помодоро</p>
               <PomodoroHint />
             </div>
-          </div></div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => setSoundOn(v => !v)} title={soundOn ? 'Звук вкл' : 'Звук выкл'}
-              className={`p-2 rounded-xl border transition-colors ${soundOn ? 'border-[#6c63ff]/40 text-[#6c63ff] bg-[#6c63ff]/5' : 'border-border text-text-7 hover:border-border-2 hover:text-subtle'}`}
-            >{soundOn ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}</button>
-
-            <button onClick={handleNotifToggle} title="Браузерные уведомления"
-              className={`px-3 py-2 rounded-xl border text-xs font-medium transition-colors ${notifOn ? 'border-[#f59e0b]/40 text-[#f59e0b] bg-[#f59e0b]/5' : 'border-border text-text-7 hover:border-border-2 hover:text-subtle'}`}
-            >{notifOn ? 'Уведомл. ✓' : 'Уведомл.'}</button>
-
-            <button onClick={() => setShowSettings(v => !v)}
-              className={`p-2 rounded-xl border transition-colors ${showSettings ? 'border-muted text-text' : 'border-border text-subtle hover:border-border-2 hover:text-text'}`}
-            ><Settings className="w-4 h-4" /></button>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={handleSoundToggle}
+              title={soundOn ? 'Звук вкл — нажмите чтобы выкл' : 'Звук выкл — нажмите чтобы вкл'}
+              className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-colors ${
+                soundOn
+                  ? 'border-[#6c63ff]/40 text-[#6c63ff] bg-[#6c63ff]/5'
+                  : 'border-border text-text-7 hover:border-border-2 hover:text-subtle'
+              }`}
+            >
+              {soundOn ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={handleNotifToggle}
+              title="Браузерные уведомления по окончании интервала"
+              className={`h-9 px-2.5 flex items-center rounded-xl border text-xs font-medium transition-colors ${
+                notifOn
+                  ? 'border-[#f59e0b]/40 text-[#f59e0b] bg-[#f59e0b]/5'
+                  : 'border-border text-text-7 hover:border-border-2 hover:text-subtle'
+              }`}
+            >
+              {notifOn ? 'Увед. ✓' : 'Увед.'}
+            </button>
+            <button
+              onClick={() => setShowSettings(v => !v)}
+              title="Настройки таймера"
+              className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-colors ${
+                showSettings
+                  ? 'border-muted text-text bg-muted/10'
+                  : 'border-border text-subtle hover:border-border-2 hover:text-text'
+              }`}
+            >
+              <Settings className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
@@ -590,92 +641,98 @@ export default function FocusModule() {
           </div>
         </div>
 
-        {/* Settings panel */}
-        {showSettings && (
-          <div className="bg-surface border border-border rounded-2xl p-5 flex flex-col gap-4 max-w-sm animate-slide-up">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-text">Настройки таймера</span>
-              {savingConf && <span className="text-xs text-text-7">Сохраняется...</span>}
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <NumInput label="Фокус (мин)"         value={settings.workMin}          min={1}  max={120} onChange={v => saveSettings({ ...settings, workMin: v })} />
-              <NumInput label="Перерыв (мин)"        value={settings.breakMin}         min={1}  max={60}  onChange={v => saveSettings({ ...settings, breakMin: v })} />
-              <NumInput label="Длинный пер. (мин)"   value={settings.longBreakMin}     min={1}  max={90}  onChange={v => saveSettings({ ...settings, longBreakMin: v })} />
-              <NumInput label="Циклов до длинного"   value={settings.cyclesBeforeLong} min={1}  max={10}  onChange={v => saveSettings({ ...settings, cyclesBeforeLong: v })} />
-              <NumInput label="Цель дня (мин)"       value={settings.goalMin}          min={0}  max={480} onChange={v => saveSettings({ ...settings, goalMin: v })} />
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* ── Right: Stats + History ────────────────────────────────────────────── */}
-      <div className="flex flex-col md:w-72 md:shrink-0 border-t md:border-t-0 md:border-l border-surface md:overflow-hidden">
-        <div className="flex-1 overflow-y-auto flex flex-col gap-4 p-5">
-
-          {/* Goal ring */}
-          {settings.goalMin > 0 && (
-            <div className="bg-surface border border-border rounded-2xl p-4 flex items-center gap-4">
-              <Ring progress={goalProgress} color="#22c55e" size={70} strokeW={7}>
-                <span className="text-xs font-bold text-[#22c55e]">{Math.round(goalProgress * 100)}%</span>
-              </Ring>
-              <div>
-                <p className="text-xs text-subtle mb-0.5">Цель дня</p>
-                <p className="text-sm font-semibold text-text">{todayMin} / {settings.goalMin} мин</p>
-                <p className="text-xs text-text-7">{todaySessions.length} сессий</p>
-              </div>
-            </div>
-          )}
-
-          {/* Stats */}
-          <div className="bg-surface border border-border rounded-2xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold text-text">Статистика</span>
-              <div className="flex bg-bg-2 rounded-lg overflow-hidden border border-surface-2">
-                {(['day','week']).map(v => (
-                  <button key={v} onClick={() => setStatsView(v)}
-                    className={`px-3 py-1 text-xs transition-all ${statsView === v ? 'bg-muted text-text' : 'text-text-6 hover:text-text'}`}
-                  >{v === 'day' ? 'День' : 'Неделя'}</button>
-                ))}
-              </div>
-            </div>
-            {(() => {
-              const list = statsView === 'day' ? todaySessions : weekSessions
-              const min  = statsView === 'day' ? todayMin       : weekMin
-              return (
-                <div className="flex gap-6">
-                  <div>
-                    <p className="text-2xl font-bold" style={{ color: meta.color }}>{list.length}</p>
-                    <p className="text-xs text-text-6">сессий</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold" style={{ color: meta.color }}>{min}</p>
-                    <p className="text-xs text-text-6">минут</p>
-                  </div>
-                </div>
-              )
-            })()}
+      {/* ── Mobile: settings full-screen overlay ─────────────────────────────── */}
+      {showSettings && (
+        <SidePanel panelClass="md:hidden" onClose={() => setShowSettings(false)}>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
+            <span className="text-sm font-semibold text-text">Настройки таймера</span>
+            <button onClick={() => setShowSettings(false)} className="p-1.5 rounded-lg text-text-6 hover:text-text hover:bg-muted/10 transition-colors">
+              <X className="w-4 h-4" />
+            </button>
           </div>
+          <SettingsContent settings={settings} saveSettings={saveSettings} savingConf={savingConf} />
+        </SidePanel>
+      )}
 
-          {/* History */}
-          <div>
-            <p className="text-[10px] text-muted uppercase tracking-widest mb-2 px-1">История сессий</p>
-            {sessions.length === 0 ? (
-              <EmptyState
-                modId="focus"
-                title="Сессий пока нет"
-                description="Запустите таймер выше, чтобы начать первую сессию фокуса"
-                compact
-              />
-            ) : (
-              <div className="flex flex-col gap-2">
-                {sessions.map(s => (
-                  <SessionRow key={s.id} session={s} tasks={tasks} projects={projects} onDelete={deleteSession} />
-                ))}
+      {/* ── Right: Settings (desktop) OR Stats + History ─────────────────────── */}
+      <div className="flex flex-col md:w-72 md:shrink-0 border-t md:border-t-0 md:border-l border-surface md:overflow-hidden">
+        {showSettings ? (
+          /* Desktop: settings panel replaces stats */
+          <>
+            <div className="hidden md:flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
+              <span className="text-sm font-semibold text-text">Настройки таймера</span>
+            </div>
+            <div className="hidden md:block">
+              <SettingsContent settings={settings} saveSettings={saveSettings} savingConf={savingConf} />
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 overflow-y-auto flex flex-col gap-4 p-5">
+
+            {settings.goalMin > 0 && (
+              <div className="bg-surface border border-border rounded-2xl p-4 flex items-center gap-4">
+                <Ring progress={goalProgress} color="#22c55e" size={70} strokeW={7}>
+                  <span className="text-xs font-bold text-[#22c55e]">{Math.round(goalProgress * 100)}%</span>
+                </Ring>
+                <div>
+                  <p className="text-xs text-subtle mb-0.5">Цель дня</p>
+                  <p className="text-sm font-semibold text-text">{todayMin} / {settings.goalMin} мин</p>
+                  <p className="text-xs text-text-7">{todaySessions.length} сессий</p>
+                </div>
               </div>
             )}
-          </div>
 
-        </div>
+            <div className="bg-surface border border-border rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-semibold text-text">Статистика</span>
+                <div className="flex bg-bg-2 rounded-lg overflow-hidden border border-surface-2">
+                  {(['day','week']).map(v => (
+                    <button key={v} onClick={() => setStatsView(v)}
+                      className={`px-3 py-1 text-xs transition-all ${statsView === v ? 'bg-muted text-text' : 'text-text-6 hover:text-text'}`}
+                    >{v === 'day' ? 'День' : 'Неделя'}</button>
+                  ))}
+                </div>
+              </div>
+              {(() => {
+                const list = statsView === 'day' ? todaySessions : weekSessions
+                const min  = statsView === 'day' ? todayMin       : weekMin
+                return (
+                  <div className="flex gap-6">
+                    <div>
+                      <p className="text-2xl font-bold" style={{ color: meta.color }}>{list.length}</p>
+                      <p className="text-xs text-text-6">сессий</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold" style={{ color: meta.color }}>{min}</p>
+                      <p className="text-xs text-text-6">минут</p>
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
+
+            <div>
+              <p className="text-[10px] text-muted uppercase tracking-widest mb-2 px-1">История сессий</p>
+              {sessions.length === 0 ? (
+                <EmptyState
+                  modId="focus"
+                  title="Сессий пока нет"
+                  description="Запустите таймер выше, чтобы начать первую сессию фокуса"
+                  compact
+                />
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {sessions.map(s => (
+                    <SessionRow key={s.id} session={s} tasks={tasks} projects={projects} onDelete={deleteSession} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+          </div>
+        )}
       </div>
     </div>
   )
