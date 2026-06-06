@@ -2,6 +2,10 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { AlertCircle, BarChart2 } from 'lucide-react'
+import {
+  ResponsiveContainer, AreaChart, Area, BarChart, Bar,
+  ComposedChart, XAxis, Tooltip,
+} from 'recharts'
 import { useOS }                      from '../../lib/store'
 import { MODULE_ICONS }               from '../../lib/moduleIcons'
 import { supabase }                   from '../../lib/supabase'
@@ -63,7 +67,7 @@ function buildBuckets(period, from) {
       const ws = new Date(fromD); ws.setDate(fromD.getDate() + w * 7)
       if (localStr(ws) > today) break
       const we = new Date(ws); we.setDate(ws.getDate() + 6)
-      buckets.push({ label: `Нед ${w+1}`, from: localStr(ws), to: localStr(we) > today ? today : localStr(we) })
+      buckets.push({ label: `Н${w+1}`, from: localStr(ws), to: localStr(we) > today ? today : localStr(we) })
     }
     return buckets
   }
@@ -87,92 +91,82 @@ function fmtMoney(n) {
   return new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 }).format(n)
 }
 
-// ─── shared UI ────────────────────────────────────────────────────────────────
+function fmtM(m) {
+  const h = Math.floor(m / 60); const min = m % 60
+  return h > 0 ? (min > 0 ? `${h}ч ${min}м` : `${h}ч`) : `${m}м`
+}
 
-// Matches WidgetCard header style from HomeScreen exactly
-function AnalyticsCard({ modId, title, children }) {
+// ─── shared chart primitives ──────────────────────────────────────────────────
+
+// Card with fixed height: header pinned top, chart fills remaining space
+// CARD_H is the single source of truth for all analytics card heights
+const CARD_H = 'h-[256px]'
+
+function AnalyticsCard({ modId, title, stats = [], children }) {
   const mi = MODULE_ICONS[modId]
   return (
-    <div className="bg-card border border-border-2 rounded-xl flex flex-col gap-3 p-4">
-      <div className="flex items-center gap-2 shrink-0">
-        {mi && (
-          <div className="w-5 h-5 rounded flex items-center justify-center shrink-0"
-            style={{ background: mi.color + '20' }}>
-            <mi.Icon className="w-3 h-3" style={{ color: mi.color }} />
+    <div className={`bg-card border border-border-2 rounded-xl flex flex-col p-4 gap-2 ${CARD_H}`}>
+      {/* header: icon + title + inline key stats */}
+      <div className="flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2">
+          {mi && (
+            <div className="w-5 h-5 rounded flex items-center justify-center shrink-0"
+              style={{ background: mi.color + '20' }}>
+              <mi.Icon className="w-3 h-3" style={{ color: mi.color }} />
+            </div>
+          )}
+          <span className="text-[11px] font-semibold text-text-4 uppercase tracking-wider">{title}</span>
+        </div>
+        {stats.length > 0 && (
+          <div className="flex items-center gap-3 shrink-0">
+            {stats.map(s => (
+              <div key={s.label} className="flex flex-col items-end gap-0.5">
+                <span className="text-sm font-bold leading-none" style={{ color: s.color || 'rgb(var(--text-rgb))' }}>
+                  {s.value}
+                </span>
+                <span className="text-[9px] text-text-7 leading-none">{s.label}</span>
+              </div>
+            ))}
           </div>
         )}
-        <span className="text-[11px] font-semibold text-text-4 uppercase tracking-wider">{title}</span>
       </div>
-      <div className="flex flex-col gap-3 min-h-0">
+      {/* chart area: fills remaining height */}
+      <div className="flex-1 min-h-0">
         {children}
       </div>
     </div>
   )
 }
 
-function StatRow({ stats }) {
+// Custom tooltip — dark/light theme via CSS vars
+function ChartTip({ active, payload, label, fmt = v => v, names = [] }) {
+  if (!active || !payload?.length) return null
   return (
-    <div className={`grid gap-2 ${stats.length <= 2 ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-4'}`}>
-      {stats.map(({ label, value, sub, color }) => (
-        <div key={label} className="bg-surface rounded-lg px-3 py-2.5">
-          <p className="text-[10px] text-text-7 mb-1 leading-none">{label}</p>
-          <p className="text-lg font-bold leading-none" style={{ color: color || 'rgb(var(--text-rgb))' }}>{value}</p>
-          {sub && <p className="text-[10px] text-text-7 mt-1 leading-none">{sub}</p>}
-        </div>
+    <div className="bg-panel border border-border-2 rounded-lg px-2.5 py-1.5 shadow-lg text-xs">
+      {label && <p className="text-text-7 text-[10px] mb-1">{label}</p>}
+      {payload.map((p, i) => (
+        <p key={i} className="font-semibold leading-snug" style={{ color: p.color || p.fill }}>
+          {names[i] ? `${names[i]}: ` : ''}{fmt(p.value)}
+        </p>
       ))}
     </div>
   )
 }
 
-function MiniBarChart({ data, color = '#6c63ff' }) {
-  if (!data?.length) return null
-  const maxVal = Math.max(...data.map(d => d.value), 1)
-  return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-end gap-[3px] h-12">
-        {data.map((d, i) => (
-          <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
-            <div
-              className="w-full rounded-sm transition-all"
-              style={{
-                height: `${Math.max(2, Math.round(d.value / maxVal * 100))}%`,
-                minHeight: '2px',
-                background: d.future ? 'rgb(var(--muted-rgb)/0.3)' : color + 'cc',
-              }}
-            />
-          </div>
-        ))}
-      </div>
-      <div className="flex gap-[3px]">
-        {data.map((d, i) => (
-          <div key={i} className="flex-1 text-center">
-            <span className="text-[8px] text-text-8 leading-none">{d.label}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
+// Shared XAxis style
+function xAxisProps() {
+  return {
+    tick: { fontSize: 9, fill: 'var(--color-text-8)', fontFamily: 'inherit' },
+    tickLine: false,
+    axisLine: false,
+    interval: 'preserveStartEnd',
+  }
 }
 
-function ProgressBar({ pct, color = '#6c63ff', label }) {
+// Empty state fills the full chart area (same height as chart)
+function ChartEmpty({ text }) {
   return (
-    <div className="flex flex-col gap-1">
-      {label && (
-        <div className="flex justify-between items-center gap-2">
-          <span className="text-[10px] text-text-5 truncate">{label}</span>
-          <span className="text-[10px] text-text-7 shrink-0">{pct}%</span>
-        </div>
-      )}
-      <div className="h-1 bg-surface-2 rounded-full overflow-hidden">
-        <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, pct)}%`, background: color }} />
-      </div>
-    </div>
-  )
-}
-
-function EmptyState({ text }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-4 gap-1.5">
+    <div className="h-full flex flex-col items-center justify-center gap-1.5 opacity-60">
       <BarChart2 className="w-5 h-5 text-text-8" />
       <p className="text-[11px] text-text-7 text-center">{text || 'Нет данных за период'}</p>
     </div>
@@ -181,38 +175,42 @@ function EmptyState({ text }) {
 
 function CardError() {
   return (
-    <div className="flex items-center gap-2 text-[11px] text-text-6 py-2">
+    <div className="h-full flex items-center justify-center gap-2 text-[11px] text-text-6">
       <AlertCircle className="w-3.5 h-3.5 text-[#ef4444]/60 shrink-0" />
       Не удалось загрузить
     </div>
   )
 }
 
+// Skeleton replicates card exact height
 function CardSkeleton() {
   return (
-    <div className="bg-card border border-border-2 rounded-xl p-4 flex flex-col gap-3">
-      <div className="h-4 w-24 bg-surface-2 rounded animate-pulse" />
-      <div className="grid grid-cols-2 gap-2">
-        <div className="h-14 bg-surface-2 rounded-lg animate-pulse" />
-        <div className="h-14 bg-surface-2 rounded-lg animate-pulse" />
+    <div className={`bg-card border border-border-2 rounded-xl p-4 flex flex-col gap-3 ${CARD_H}`}>
+      <div className="flex items-center justify-between shrink-0">
+        <div className="h-4 w-24 bg-surface-2 rounded animate-pulse" />
+        <div className="h-4 w-12 bg-surface-2 rounded animate-pulse" />
       </div>
-      <div className="h-12 bg-surface-2 rounded animate-pulse" />
+      <div className="flex-1 min-h-0 bg-surface-2 rounded-lg animate-pulse" />
     </div>
   )
 }
 
-// ─── TASKS widget ─────────────────────────────────────────────────────────────
+// ─── widget: TASKS ────────────────────────────────────────────────────────────
 
 function TasksWidget({ tasks, buckets, range }) {
+  const mi = MODULE_ICONS['tasks']
+
   const inPeriod = tasks.filter(t => {
-    const d = t.status === 'done' ? (t.completed_at ? t.completed_at.slice(0,10) : t.due_date) : t.due_date
+    const d = t.status === 'done'
+      ? (t.completed_at ? t.completed_at.slice(0,10) : t.due_date)
+      : t.due_date
     return inRange(d, range.from, range.to)
   })
   const done        = inPeriod.filter(t => t.status === 'done').length
   const total       = inPeriod.length
   const completePct = total > 0 ? Math.round(done / total * 100) : 0
 
-  const barData = buckets.map(b => ({
+  const chartData = buckets.map(b => ({
     label: b.label,
     value: tasks.filter(t => {
       const d = t.completed_at ? t.completed_at.slice(0,10) : t.due_date
@@ -221,291 +219,391 @@ function TasksWidget({ tasks, buckets, range }) {
     future: b.future,
   }))
 
-  const mi = MODULE_ICONS['tasks']
+  const hasData = chartData.some(d => d.value > 0)
+
   return (
-    <AnalyticsCard modId="tasks" title="Задачи">
-      {total === 0
-        ? <EmptyState text="Задач за период нет" />
-        : <>
-            <StatRow stats={[
-              { label: 'Выполнено',    value: done,            color: mi?.color },
-              { label: '% завершения', value: `${completePct}%`,
-                color: completePct >= 70 ? '#22c55e' : '#f59e0b' },
-            ]} />
-            <MiniBarChart data={barData} color={mi?.color} />
-          </>
+    <AnalyticsCard modId="tasks" title="Задачи" stats={[
+      { label: 'выполнено', value: done, color: mi?.color },
+      { label: '% из всех', value: `${completePct}%`,
+        color: completePct >= 70 ? '#22c55e' : completePct > 0 ? '#f59e0b' : undefined },
+    ]}>
+      {!hasData
+        ? <ChartEmpty text="Задач за период нет" />
+        : <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} barCategoryGap="30%">
+              <XAxis dataKey="label" {...xAxisProps()} />
+              <Tooltip content={<ChartTip fmt={v => `${v} задач`} />} cursor={{ fill: mi?.color + '15' }} />
+              <Bar dataKey="value" radius={[3,3,0,0]}
+                fill={mi?.color}
+                fillOpacity={0.85} />
+            </BarChart>
+          </ResponsiveContainer>
       }
     </AnalyticsCard>
   )
 }
 
-// ─── HABITS widget ────────────────────────────────────────────────────────────
+// ─── widget: HABITS ───────────────────────────────────────────────────────────
 
-function HabitsWidget({ habits, completions, range }) {
-  if (!habits.length) return (
-    <AnalyticsCard modId="habits" title="Привычки"><EmptyState text="Нет привычек" /></AnalyticsCard>
-  )
-
-  const allRates = habits.map(h => {
-    const dates   = completions[h.id] || []
-    const inP     = dates.filter(d => inRange(d, range.from, range.to)).length
-    const daysInP = Math.max(1, Math.ceil((new Date(range.to+'T00:00:00') - new Date(range.from+'T00:00:00')) / 86400000) + 1)
-    return { habit: h, inP, pct: Math.round(inP / daysInP * 100) }
-  })
-
-  const avgPct = Math.round(allRates.reduce((s, r) => s + r.pct, 0) / allRates.length)
+function HabitsWidget({ habits, completions, buckets, range }) {
   const mi = MODULE_ICONS['habits']
 
-  return (
+  if (!habits.length) return (
     <AnalyticsCard modId="habits" title="Привычки">
-      <StatRow stats={[
-        { label: 'Ср. выполнение', value: `${avgPct}%`, color: mi?.color },
-        { label: 'Привычек',       value: habits.length },
-      ]} />
-      {allRates.every(r => r.inP === 0)
-        ? <EmptyState text="Нет отметок за период" />
-        : <div className="flex flex-col gap-2">
-            {allRates.map(({ habit, pct }) => (
-              <ProgressBar key={habit.id} pct={pct} color={habit.color || mi?.color}
-                label={`${habit.emoji || ''} ${habit.name}`} />
-            ))}
-          </div>
+      <ChartEmpty text="Нет привычек" />
+    </AnalyticsCard>
+  )
+
+  // avg completion % per bucket across all habits
+  const chartData = buckets.map(b => {
+    const bucketDays = Math.max(1,
+      Math.round((new Date(b.to+'T00:00:00') - new Date(b.from+'T00:00:00')) / 86400000) + 1
+    )
+    const possible = habits.length * bucketDays
+    const done     = habits.reduce((sum, h) => {
+      return sum + (completions[h.id] || []).filter(d => inRange(d, b.from, b.to)).length
+    }, 0)
+    return { label: b.label, value: possible > 0 ? Math.round(done / possible * 100) : 0, future: b.future }
+  })
+
+  // overall avg for header
+  const allDays = Math.max(1,
+    Math.round((new Date(range.to+'T00:00:00') - new Date(range.from+'T00:00:00')) / 86400000) + 1
+  )
+  const totalDone = habits.reduce((sum, h) =>
+    sum + (completions[h.id] || []).filter(d => inRange(d, range.from, range.to)).length, 0
+  )
+  const avgPct = Math.round(totalDone / (habits.length * allDays) * 100)
+
+  const hasData = chartData.some(d => d.value > 0)
+
+  return (
+    <AnalyticsCard modId="habits" title="Привычки" stats={[
+      { label: 'ср. выполнение', value: `${avgPct}%`, color: mi?.color },
+      { label: 'привычек', value: habits.length },
+    ]}>
+      {!hasData
+        ? <ChartEmpty text="Нет отметок за период" />
+        : <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData}>
+              <defs>
+                <linearGradient id="habitsGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor={mi?.color} stopOpacity={0.25} />
+                  <stop offset="95%" stopColor={mi?.color} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="label" {...xAxisProps()} />
+              <Tooltip content={<ChartTip fmt={v => `${v}%`} />} cursor={{ stroke: mi?.color + '40', strokeWidth: 1 }} />
+              <Area
+                type="monotone" dataKey="value"
+                stroke={mi?.color} strokeWidth={1.5}
+                fill="url(#habitsGrad)"
+                dot={false} activeDot={{ r: 3, fill: mi?.color }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
       }
     </AnalyticsCard>
   )
 }
 
-// ─── FOCUS widget ─────────────────────────────────────────────────────────────
+// ─── widget: FOCUS ────────────────────────────────────────────────────────────
 
 function FocusWidget({ sessions, profile, buckets, range }) {
+  const mi = MODULE_ICONS['focus']
+
   const inPeriod = sessions.filter(s => s.type === 'focus' && s.completed && inRange(s.date, range.from, range.to))
   const totalMin = inPeriod.reduce((s, x) => s + (x.duration_minutes || 0), 0)
   const goalMin  = profile?.focus_goal_minutes || 0
 
-  const barData = buckets.map(b => ({
+  const chartData = buckets.map(b => ({
     label: b.label,
-    value: sessions.filter(s => s.type === 'focus' && s.completed && inRange(s.date, b.from, b.to))
-                   .reduce((s, x) => s + (x.duration_minutes || 0), 0),
+    value: sessions
+      .filter(s => s.type === 'focus' && s.completed && inRange(s.date, b.from, b.to))
+      .reduce((s, x) => s + (x.duration_minutes || 0), 0),
     future: b.future,
   }))
 
-  function fmtM(m) {
-    const h = Math.floor(m/60); const min = m%60
-    return h > 0 ? (min > 0 ? `${h}ч ${min}м` : `${h}ч`) : `${m}м`
-  }
+  const hasData = chartData.some(d => d.value > 0)
 
-  const mi = MODULE_ICONS['focus']
   return (
-    <AnalyticsCard modId="focus" title="Фокус">
-      {totalMin === 0
-        ? <EmptyState text="Нет сессий за период" />
-        : <>
-            <StatRow stats={[
-              { label: 'Время',   value: fmtM(totalMin), color: mi?.color },
-              { label: 'Сессий', value: inPeriod.length },
-              ...(goalMin > 0 ? [{ label: '% цели', value: `${Math.round(totalMin/goalMin*100)}%` }] : []),
-            ]} />
-            <MiniBarChart data={barData} color={mi?.color} />
-          </>
+    <AnalyticsCard modId="focus" title="Фокус" stats={[
+      { label: 'суммарно', value: fmtM(totalMin), color: mi?.color },
+      ...(goalMin > 0 ? [{ label: '% цели', value: `${Math.round(totalMin / goalMin * 100)}%` }] : []),
+    ]}>
+      {!hasData
+        ? <ChartEmpty text="Нет сессий за период" />
+        : <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData}>
+              <defs>
+                <linearGradient id="focusGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor={mi?.color} stopOpacity={0.25} />
+                  <stop offset="95%" stopColor={mi?.color} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="label" {...xAxisProps()} />
+              <Tooltip content={<ChartTip fmt={fmtM} />} cursor={{ stroke: mi?.color + '40', strokeWidth: 1 }} />
+              <Area
+                type="monotone" dataKey="value"
+                stroke={mi?.color} strokeWidth={1.5}
+                fill="url(#focusGrad)"
+                dot={false} activeDot={{ r: 3, fill: mi?.color }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
       }
     </AnalyticsCard>
   )
 }
 
-// ─── NUTRITION widget ─────────────────────────────────────────────────────────
+// ─── widget: NUTRITION ────────────────────────────────────────────────────────
 
 function NutritionWidget({ food, profile, buckets, range }) {
+  const mi   = MODULE_ICONS['nutrition']
+  const goal = profile?.calorie_goal || 0
+
   const inPeriod = food.filter(e => inRange(e.date, range.from, range.to))
-  const goal     = profile?.calorie_goal || 0
-
-  if (!inPeriod.length) return (
-    <AnalyticsCard modId="nutrition" title="Питание"><EmptyState text="Нет данных за период" /></AnalyticsCard>
-  )
-
   const days     = [...new Set(inPeriod.map(e => e.date))]
-  const n        = days.length || 1
-  const avgCal   = Math.round(inPeriod.reduce((s, e) => s + e.calories, 0) / n)
-  const avgProt  = Math.round(inPeriod.reduce((s, e) => s + (Number(e.protein)||0), 0) / n)
-  const avgFat   = Math.round(inPeriod.reduce((s, e) => s + (Number(e.fat)||0), 0) / n)
-  const avgCarbs = Math.round(inPeriod.reduce((s, e) => s + (Number(e.carbs)||0), 0) / n)
+  const avgCal   = days.length
+    ? Math.round(inPeriod.reduce((s, e) => s + e.calories, 0) / days.length)
+    : 0
 
-  const barData = buckets.map(b => {
+  const chartData = buckets.map(b => {
     const bE    = inPeriod.filter(e => inRange(e.date, b.from, b.to))
     const bDays = [...new Set(bE.map(e => e.date))].length || 1
-    return { label: b.label, value: Math.round(bE.reduce((s,e) => s+e.calories, 0) / bDays), future: b.future }
+    return {
+      label: b.label,
+      value: bE.length ? Math.round(bE.reduce((s, e) => s + e.calories, 0) / bDays) : 0,
+      future: b.future,
+    }
   })
 
-  const mi = MODULE_ICONS['nutrition']
+  const hasData = chartData.some(d => d.value > 0)
+
   return (
-    <AnalyticsCard modId="nutrition" title="Питание">
-      <StatRow stats={[
-        { label: 'Ср. ккал/день', value: avgCal, color: mi?.color,
-          sub: goal > 0 ? `цель ${goal}` : undefined },
-        { label: 'Б / Ж / У', value: `${avgProt}/${avgFat}/${avgCarbs}г` },
-      ]} />
-      <MiniBarChart data={barData} color={mi?.color} />
-      {goal > 0 && <ProgressBar pct={Math.round(avgCal/goal*100)} color={mi?.color} label="Ср. % цели калорий" />}
+    <AnalyticsCard modId="nutrition" title="Питание" stats={[
+      { label: 'ср. ккал/день', value: avgCal || '—', color: mi?.color },
+      ...(goal > 0 ? [{ label: 'цель', value: goal }] : []),
+    ]}>
+      {!hasData
+        ? <ChartEmpty text="Нет данных за период" />
+        : <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData}>
+              <defs>
+                <linearGradient id="nutritionGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor={mi?.color} stopOpacity={0.25} />
+                  <stop offset="95%" stopColor={mi?.color} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="label" {...xAxisProps()} />
+              <Tooltip content={<ChartTip fmt={v => `${v} ккал`} />} cursor={{ stroke: mi?.color + '40', strokeWidth: 1 }} />
+              <Area
+                type="monotone" dataKey="value"
+                stroke={mi?.color} strokeWidth={1.5}
+                fill="url(#nutritionGrad)"
+                dot={false} activeDot={{ r: 3, fill: mi?.color }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+      }
     </AnalyticsCard>
   )
 }
 
-// ─── SLEEP widget ─────────────────────────────────────────────────────────────
+// ─── widget: SLEEP ────────────────────────────────────────────────────────────
 
 function SleepWidget({ sleep, buckets, range }) {
+  const mi = MODULE_ICONS['sleep']
+
   const inPeriod = sleep.filter(e => inRange(e.date, range.from, range.to))
+  const avgMin   = inPeriod.length
+    ? Math.round(inPeriod.reduce((s, e) => s + (e.durationMinutes || 0), 0) / inPeriod.length)
+    : 0
+  const withQ    = inPeriod.filter(e => e.quality != null)
+  const avgQ     = withQ.length ? (withQ.reduce((s,e) => s + e.quality, 0) / withQ.length).toFixed(1) : null
 
-  if (!inPeriod.length) return (
-    <AnalyticsCard modId="sleep" title="Сон"><EmptyState text="Нет данных за период" /></AnalyticsCard>
-  )
-
-  const avgMin = Math.round(inPeriod.reduce((s, e) => s + (e.durationMinutes||0), 0) / inPeriod.length)
-  const withQ  = inPeriod.filter(e => e.quality != null)
-  const avgQ   = withQ.length ? (withQ.reduce((s,e) => s+e.quality, 0) / withQ.length).toFixed(1) : null
-
-  const barData = buckets.map(b => {
+  const chartData = buckets.map(b => {
     const bE = inPeriod.filter(e => inRange(e.date, b.from, b.to))
-    return { label: b.label, value: bE.length ? Math.round(bE.reduce((s,e) => s+(e.durationMinutes||0),0) / bE.length) : 0, future: b.future }
+    return {
+      label: b.label,
+      value: bE.length
+        ? Math.round(bE.reduce((s, e) => s + (e.durationMinutes || 0), 0) / bE.length)
+        : 0,
+      future: b.future,
+    }
   })
 
-  const mi = MODULE_ICONS['sleep']
+  const hasData = chartData.some(d => d.value > 0)
+
   return (
-    <AnalyticsCard modId="sleep" title="Сон">
-      <StatRow stats={[
-        { label: 'Ср. длит.',  value: fmtDuration(avgMin), color: mi?.color },
-        ...(avgQ ? [{ label: 'Ср. качество', value: `${avgQ}/5` }] : []),
-        { label: 'Ночей',      value: inPeriod.length },
-      ]} />
-      <MiniBarChart data={barData} color={mi?.color} />
+    <AnalyticsCard modId="sleep" title="Сон" stats={[
+      { label: 'ср. длит.', value: avgMin ? fmtDuration(avgMin) : '—', color: mi?.color },
+      ...(avgQ ? [{ label: 'качество', value: `${avgQ}/5` }] : []),
+    ]}>
+      {!hasData
+        ? <ChartEmpty text="Нет данных за период" />
+        : <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData}>
+              <defs>
+                <linearGradient id="sleepGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor={mi?.color} stopOpacity={0.25} />
+                  <stop offset="95%" stopColor={mi?.color} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="label" {...xAxisProps()} />
+              <Tooltip content={<ChartTip fmt={v => fmtDuration(v)} />} cursor={{ stroke: mi?.color + '40', strokeWidth: 1 }} />
+              <Area
+                type="monotone" dataKey="value"
+                stroke={mi?.color} strokeWidth={1.5}
+                fill="url(#sleepGrad)"
+                dot={false} activeDot={{ r: 3, fill: mi?.color }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+      }
     </AnalyticsCard>
   )
 }
 
-// ─── FITNESS widget ───────────────────────────────────────────────────────────
+// ─── widget: FITNESS ──────────────────────────────────────────────────────────
 
 function FitnessWidget({ workouts, buckets, range }) {
-  const inPeriod = workouts.filter(w => inRange((w.date||'').slice(0,10), range.from, range.to))
+  const mi = MODULE_ICONS['fitness']
 
-  if (!inPeriod.length) return (
-    <AnalyticsCard modId="fitness" title="Тренировки"><EmptyState text="Нет тренировок за период" /></AnalyticsCard>
-  )
+  const inPeriod = workouts.filter(w => inRange((w.date || '').slice(0,10), range.from, range.to))
+  const totalMin = inPeriod.reduce((s, w) => s + (w.duration || 0), 0)
 
-  const totalMin = inPeriod.reduce((s, w) => s + (w.duration||0), 0)
-  const types    = [...new Map(inPeriod.filter(w => w.typeName).map(w => [w.typeName, w])).values()].slice(0, 4)
-
-  const barData = buckets.map(b => ({
+  const chartData = buckets.map(b => ({
     label: b.label,
-    value: workouts.filter(w => inRange((w.date||'').slice(0,10), b.from, b.to)).length,
+    value: workouts.filter(w => inRange((w.date || '').slice(0,10), b.from, b.to)).length,
     future: b.future,
   }))
 
-  function fmtM(m) {
-    const h = Math.floor(m/60); const min = m%60
-    return h > 0 ? (min > 0 ? `${h}ч ${min}м` : `${h}ч`) : `${m}м`
-  }
+  const hasData = chartData.some(d => d.value > 0)
 
-  const mi = MODULE_ICONS['fitness']
   return (
-    <AnalyticsCard modId="fitness" title="Тренировки">
-      <StatRow stats={[
-        { label: 'Тренировок',  value: inPeriod.length, color: mi?.color },
-        { label: 'Общее время', value: fmtM(totalMin) },
-      ]} />
-      <MiniBarChart data={barData} color={mi?.color} />
-      {types.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {types.map(w => (
-            <span key={w.typeName}
-              className="flex items-center gap-1 px-2 py-0.5 bg-surface rounded-full text-[10px] text-text-5 border border-border-2">
-              <span>{w.typeEmoji}</span>{w.typeName}
-            </span>
-          ))}
-        </div>
-      )}
+    <AnalyticsCard modId="fitness" title="Тренировки" stats={[
+      { label: 'тренировок', value: inPeriod.length, color: mi?.color },
+      { label: 'суммарно',   value: fmtM(totalMin) },
+    ]}>
+      {!hasData
+        ? <ChartEmpty text="Нет тренировок за период" />
+        : <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} barCategoryGap="30%">
+              <XAxis dataKey="label" {...xAxisProps()} />
+              <Tooltip content={<ChartTip fmt={v => `${v} тр.`} />} cursor={{ fill: mi?.color + '15' }} />
+              <Bar dataKey="value" radius={[3,3,0,0]} fill={mi?.color} fillOpacity={0.85} />
+            </BarChart>
+          </ResponsiveContainer>
+      }
     </AnalyticsCard>
   )
 }
 
-// ─── FINANCE widget ───────────────────────────────────────────────────────────
+// ─── widget: FINANCE ──────────────────────────────────────────────────────────
 
-function FinanceWidget({ transactions, categories, buckets, range }) {
+function FinanceWidget({ transactions, buckets, range }) {
+  const mi = MODULE_ICONS['finance']
+
   const inPeriod = transactions.filter(t => inRange(t.date, range.from, range.to))
+  const income   = inPeriod.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
+  const expense  = inPeriod.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
+  const net      = income - expense
 
-  if (!inPeriod.length) return (
-    <AnalyticsCard modId="finance" title="Финансы"><EmptyState text="Нет транзакций за период" /></AnalyticsCard>
-  )
-
-  const income  = inPeriod.filter(t => t.type==='income').reduce((s,t) => s+t.amount, 0)
-  const expense = inPeriod.filter(t => t.type==='expense').reduce((s,t) => s+t.amount, 0)
-  const net     = income - expense
-
-  const catMap = {}
-  inPeriod.filter(t => t.type==='expense').forEach(t => {
-    const k = t.categoryId || 'other'
-    catMap[k] = (catMap[k] || 0) + t.amount
+  const chartData = buckets.map(b => {
+    const bT = transactions.filter(t => inRange(t.date, b.from, b.to))
+    return {
+      label:   b.label,
+      income:  Math.round(bT.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)),
+      expense: Math.round(bT.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)),
+      future:  b.future,
+    }
   })
-  const topCats = Object.entries(catMap).sort((a,b) => b[1]-a[1]).slice(0, 4)
 
-  const netBarData = buckets.map(b => {
-    const bTxns = transactions.filter(t => inRange(t.date, b.from, b.to))
-    const bInc  = bTxns.filter(t=>t.type==='income').reduce((s,t) => s+t.amount,0)
-    const bExp  = bTxns.filter(t=>t.type==='expense').reduce((s,t) => s+t.amount,0)
-    return { label: b.label, value: Math.max(0, bInc - bExp), future: b.future }
-  })
+  const hasData = chartData.some(d => d.income > 0 || d.expense > 0)
 
   return (
-    <AnalyticsCard modId="finance" title="Финансы">
-      <StatRow stats={[
-        { label: 'Доходы',  value: `${fmtMoney(income)} ₽`,  color: '#22c55e' },
-        { label: 'Расходы', value: `${fmtMoney(expense)} ₽`, color: '#ef4444' },
-        { label: 'Нетто',   value: `${net >= 0 ? '+' : '−'}${fmtMoney(Math.abs(net))} ₽`,
-          color: net >= 0 ? '#22c55e' : '#ef4444' },
-      ]} />
-      <MiniBarChart data={netBarData} color={MODULE_ICONS['finance']?.color} />
-      {topCats.length > 0 && (
-        <div className="flex flex-col gap-1.5">
-          <p className="text-[10px] text-text-8 uppercase tracking-wider">Топ расходы</p>
-          {topCats.map(([catId, total]) => {
-            const cat = categories.find(c => c.id === catId)
-            return (
-              <div key={catId} className="flex items-center justify-between">
-                <span className="text-[11px] text-text-4">{cat ? `${cat.emoji} ${cat.name}` : 'Прочее'}</span>
-                <span className="text-[11px] text-text-6">{fmtMoney(total)} ₽</span>
-              </div>
-            )
-          })}
-        </div>
-      )}
+    <AnalyticsCard modId="finance" title="Финансы" stats={[
+      { label: 'нетто', value: `${net >= 0 ? '+' : '−'}${fmtMoney(Math.abs(net))} ₽`,
+        color: net >= 0 ? '#22c55e' : '#ef4444' },
+    ]}>
+      {!hasData
+        ? <ChartEmpty text="Нет транзакций за период" />
+        : <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={chartData}>
+              <defs>
+                <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor="#22c55e" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor="#ef4444" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="label" {...xAxisProps()} />
+              <Tooltip
+                content={<ChartTip fmt={v => `${fmtMoney(v)} ₽`} names={['Доходы', 'Расходы']} />}
+                cursor={{ stroke: '#ffffff20', strokeWidth: 1 }}
+              />
+              <Area type="monotone" dataKey="income"  stroke="#22c55e" strokeWidth={1.5}
+                fill="url(#incomeGrad)"  dot={false} activeDot={{ r: 3, fill: '#22c55e' }} />
+              <Area type="monotone" dataKey="expense" stroke="#ef4444" strokeWidth={1.5}
+                fill="url(#expenseGrad)" dot={false} activeDot={{ r: 3, fill: '#ef4444' }} />
+            </ComposedChart>
+          </ResponsiveContainer>
+      }
     </AnalyticsCard>
   )
 }
 
-// ─── GOALS widget ─────────────────────────────────────────────────────────────
+// ─── widget: GOALS ────────────────────────────────────────────────────────────
 
 function GoalsWidget({ goals, milestones }) {
-  const active = goals.filter(g => g.status === 'active')
+  const mi     = MODULE_ICONS['goals']
+  const active = goals.filter(g => g.status === 'active').slice(0, 8)
 
   if (!active.length) return (
-    <AnalyticsCard modId="goals" title="Цели"><EmptyState text="Нет активных целей" /></AnalyticsCard>
+    <AnalyticsCard modId="goals" title="Цели">
+      <ChartEmpty text="Нет активных целей" />
+    </AnalyticsCard>
   )
 
+  // BarChart: each bar = one goal, value = progress %
+  const chartData = active.map(goal => ({
+    label: (goal.icon || '').slice(0, 2),   // emoji as X label
+    value: computeProgress(goal, milestones),
+    color: goal.color || mi?.color,
+    name:  goal.title,
+  }))
+
+  const avgPct = Math.round(chartData.reduce((s, d) => s + d.value, 0) / chartData.length)
+
   return (
-    <AnalyticsCard modId="goals" title="Цели">
-      <div className="flex flex-col gap-2.5">
-        {active.map(goal => {
-          const pct = computeProgress(goal, milestones)
-          return (
-            <div key={goal.id} className="flex flex-col gap-1">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[11px] text-text-4 truncate">{goal.icon} {goal.title}</span>
-                <span className="text-[10px] text-text-6 shrink-0">{pct}%</span>
-              </div>
-              <div className="h-1 bg-surface-2 rounded-full overflow-hidden">
-                <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: goal.color || '#8b5cf6' }} />
-              </div>
-            </div>
-          )
-        })}
-      </div>
+    <AnalyticsCard modId="goals" title="Цели" stats={[
+      { label: 'ср. прогресс', value: `${avgPct}%`, color: mi?.color },
+      { label: 'активных', value: active.length },
+    ]}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={chartData} barCategoryGap="25%">
+          <XAxis dataKey="label" {...xAxisProps()} />
+          <Tooltip
+            content={({ active, payload }) => {
+              if (!active || !payload?.length) return null
+              const d = payload[0]?.payload
+              return (
+                <div className="bg-panel border border-border-2 rounded-lg px-2.5 py-1.5 shadow-lg text-xs">
+                  <p className="text-text-5 mb-0.5 max-w-[140px] truncate">{d?.name}</p>
+                  <p className="font-semibold" style={{ color: d?.color }}>{d?.value}%</p>
+                </div>
+              )
+            }}
+            cursor={{ fill: mi?.color + '15' }}
+          />
+          <Bar dataKey="value" radius={[3,3,0,0]} maxBarSize={32}
+            fill={mi?.color} fillOpacity={0.85} />
+        </BarChart>
+      </ResponsiveContainer>
     </AnalyticsCard>
   )
 }
@@ -529,8 +627,6 @@ export default function AnalyticsScreen() {
   const [loading,   setLoading]   = useState(true)
   const [daysInSys, setDaysInSys] = useState(null)
 
-  // ── load all data once ────────────────────────────────────────────────────
-
   useEffect(() => {
     if (!userId) return
 
@@ -538,7 +634,8 @@ export default function AnalyticsScreen() {
       if (user?.created_at) {
         const c       = new Date(user.created_at)
         const created = new Date(c.getFullYear(), c.getMonth(), c.getDate())
-        const t       = new Date(); const today = new Date(t.getFullYear(), t.getMonth(), t.getDate())
+        const t       = new Date()
+        const today   = new Date(t.getFullYear(), t.getMonth(), t.getDate())
         setDaysInSys(Math.max(1, Math.floor((today - created) / 86400000) + 1))
       }
     }).catch(() => {})
@@ -547,19 +644,20 @@ export default function AnalyticsScreen() {
     const safe = (key, fn) => fn().catch(e => { errors[key] = true; console.error(`Analytics ${key}:`, e.message); return null })
 
     ;(async () => {
-      const [tasks, habits, focus, food, sleep, workouts, transactions, categories, goals, milestones, profile] = await Promise.all([
-        safe('tasks',        () => tasksRepo.list(userId)),
-        safe('habits',       () => habitsRepo.list(userId)),
-        safe('focus',        () => focusSessionsRepo.list(userId)),
-        safe('food',         () => foodEntriesRepo.listAll(userId)),
-        safe('sleep',        () => sleepRepo.list(userId)),
-        safe('workouts',     () => workoutsRepo.list(userId)),
-        safe('transactions', () => transactionsRepo.list(userId)),
-        safe('categories',   () => financeCategoriesRepo.list(userId)),
-        safe('goals',        () => goalsRepo.list(userId)),
-        safe('milestones',   () => goalMilestonesRepo.listAll(userId)),
-        safe('profile',      () => profileRepo.get(userId)),
-      ])
+      const [tasks, habits, focus, food, sleep, workouts, transactions, categories, goals, milestones, profile] =
+        await Promise.all([
+          safe('tasks',        () => tasksRepo.list(userId)),
+          safe('habits',       () => habitsRepo.list(userId)),
+          safe('focus',        () => focusSessionsRepo.list(userId)),
+          safe('food',         () => foodEntriesRepo.listAll(userId)),
+          safe('sleep',        () => sleepRepo.list(userId)),
+          safe('workouts',     () => workoutsRepo.list(userId)),
+          safe('transactions', () => transactionsRepo.list(userId)),
+          safe('categories',   () => financeCategoriesRepo.list(userId)),
+          safe('goals',        () => goalsRepo.list(userId)),
+          safe('milestones',   () => goalMilestonesRepo.listAll(userId)),
+          safe('profile',      () => profileRepo.get(userId)),
+        ])
 
       let completions = {}
       if (habits?.length) {
@@ -576,15 +674,11 @@ export default function AnalyticsScreen() {
   const range   = useMemo(() => getPeriodRange(period),           [period])
   const buckets = useMemo(() => buildBuckets(period, range.from), [period, range.from])
 
-  // modules that have analytics widgets, filtered by user's active modules
   const visibleModules = activeModules.filter(id => ANALYTICS_MODULES.has(id))
-
-  // ── render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto animate-fade-in">
 
-      {/* Header */}
       <div className="mb-6">
         <h1 className="text-xl font-bold text-text">Аналитика</h1>
         <p className="text-text-7 text-sm mt-0.5">Прогресс по активным модулям</p>
@@ -597,25 +691,22 @@ export default function AnalyticsScreen() {
       ) : (
         <div className="flex flex-col gap-4">
 
-          {/* Top summary + period selector row */}
+          {/* Summary + period selector */}
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-
-            {/* Summary chips */}
-            <div className="flex gap-2 flex-shrink-0">
-              <div className="bg-card border border-border-2 rounded-xl px-4 py-2.5 flex flex-col gap-0.5 min-w-[90px]">
+            <div className="flex gap-2 shrink-0">
+              <div className="bg-card border border-border-2 rounded-xl px-4 py-2.5 min-w-[90px]">
                 <p className="text-[10px] uppercase tracking-wider text-text-7">Модулей</p>
-                <p className="text-xl font-bold text-text">{activeModules.length}</p>
+                <p className="text-xl font-bold text-text leading-snug">{activeModules.length}</p>
               </div>
-              <div className="bg-card border border-border-2 rounded-xl px-4 py-2.5 flex flex-col gap-0.5 min-w-[90px]">
+              <div className="bg-card border border-border-2 rounded-xl px-4 py-2.5 min-w-[100px]">
                 <p className="text-[10px] uppercase tracking-wider text-text-7">Дней в системе</p>
                 {daysInSys === null
-                  ? <div className="h-7 w-10 bg-surface-2 rounded animate-pulse mt-0.5" />
-                  : <p className="text-xl font-bold text-text">{daysInSys}</p>
+                  ? <div className="h-6 w-10 bg-surface-2 rounded animate-pulse mt-0.5" />
+                  : <p className="text-xl font-bold text-text leading-snug">{daysInSys}</p>
                 }
               </div>
             </div>
 
-            {/* Period selector */}
             <div className="flex gap-1 bg-surface rounded-xl p-1 sm:ml-auto">
               {PERIOD_TABS.map(t => (
                 <button key={t.key} onClick={() => setPeriod(t.key)}
@@ -629,7 +720,7 @@ export default function AnalyticsScreen() {
             </div>
           </div>
 
-          {/* Widget grid — same adaptive grid as HomeScreen */}
+          {/* Widget grid */}
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" style={{ gridAutoFlow: 'dense' }}>
               {visibleModules.map(id => <CardSkeleton key={id} />)}
@@ -639,46 +730,52 @@ export default function AnalyticsScreen() {
               {visibleModules.map(modId => {
                 const d = allData
 
-                const renderWidget = () => {
-                  switch (modId) {
-                    case 'tasks':
-                      if (loadErr.tasks || !d?.tasks)
-                        return <AnalyticsCard modId="tasks" title="Задачи"><CardError /></AnalyticsCard>
-                      return <TasksWidget tasks={d.tasks} buckets={buckets} range={range} />
-                    case 'habits':
-                      if (loadErr.habits || !d?.habits)
-                        return <AnalyticsCard modId="habits" title="Привычки"><CardError /></AnalyticsCard>
-                      return <HabitsWidget habits={d.habits} completions={d.completions||{}} range={range} />
-                    case 'focus':
-                      if (loadErr.focus || !d?.focus)
-                        return <AnalyticsCard modId="focus" title="Фокус"><CardError /></AnalyticsCard>
-                      return <FocusWidget sessions={d.focus} profile={d.profile} buckets={buckets} range={range} />
-                    case 'nutrition':
-                      if (loadErr.food || !d?.food)
-                        return <AnalyticsCard modId="nutrition" title="Питание"><CardError /></AnalyticsCard>
-                      return <NutritionWidget food={d.food} profile={d.profile} buckets={buckets} range={range} />
-                    case 'sleep':
-                      if (loadErr.sleep || !d?.sleep)
-                        return <AnalyticsCard modId="sleep" title="Сон"><CardError /></AnalyticsCard>
-                      return <SleepWidget sleep={d.sleep} buckets={buckets} range={range} />
-                    case 'fitness':
-                      if (loadErr.workouts || !d?.workouts)
-                        return <AnalyticsCard modId="fitness" title="Тренировки"><CardError /></AnalyticsCard>
-                      return <FitnessWidget workouts={d.workouts} buckets={buckets} range={range} />
-                    case 'finance':
-                      if (loadErr.transactions || !d?.transactions)
-                        return <AnalyticsCard modId="finance" title="Финансы"><CardError /></AnalyticsCard>
-                      return <FinanceWidget transactions={d.transactions} categories={d.categories||[]} buckets={buckets} range={range} />
-                    case 'goals':
-                      if (loadErr.goals || !d?.goals)
-                        return <AnalyticsCard modId="goals" title="Цели"><CardError /></AnalyticsCard>
-                      return <GoalsWidget goals={d.goals} milestones={d.milestones||[]} />
-                    default:
-                      return null
-                  }
+                let widget = null
+                switch (modId) {
+                  case 'tasks':
+                    widget = loadErr.tasks || !d?.tasks
+                      ? <AnalyticsCard modId="tasks" title="Задачи"><CardError /></AnalyticsCard>
+                      : <TasksWidget tasks={d.tasks} buckets={buckets} range={range} />
+                    break
+                  case 'habits':
+                    widget = loadErr.habits || !d?.habits
+                      ? <AnalyticsCard modId="habits" title="Привычки"><CardError /></AnalyticsCard>
+                      : <HabitsWidget habits={d.habits} completions={d.completions||{}} buckets={buckets} range={range} />
+                    break
+                  case 'focus':
+                    widget = loadErr.focus || !d?.focus
+                      ? <AnalyticsCard modId="focus" title="Фокус"><CardError /></AnalyticsCard>
+                      : <FocusWidget sessions={d.focus} profile={d.profile} buckets={buckets} range={range} />
+                    break
+                  case 'nutrition':
+                    widget = loadErr.food || !d?.food
+                      ? <AnalyticsCard modId="nutrition" title="Питание"><CardError /></AnalyticsCard>
+                      : <NutritionWidget food={d.food} profile={d.profile} buckets={buckets} range={range} />
+                    break
+                  case 'sleep':
+                    widget = loadErr.sleep || !d?.sleep
+                      ? <AnalyticsCard modId="sleep" title="Сон"><CardError /></AnalyticsCard>
+                      : <SleepWidget sleep={d.sleep} buckets={buckets} range={range} />
+                    break
+                  case 'fitness':
+                    widget = loadErr.workouts || !d?.workouts
+                      ? <AnalyticsCard modId="fitness" title="Тренировки"><CardError /></AnalyticsCard>
+                      : <FitnessWidget workouts={d.workouts} buckets={buckets} range={range} />
+                    break
+                  case 'finance':
+                    widget = loadErr.transactions || !d?.transactions
+                      ? <AnalyticsCard modId="finance" title="Финансы"><CardError /></AnalyticsCard>
+                      : <FinanceWidget transactions={d.transactions} buckets={buckets} range={range} />
+                    break
+                  case 'goals':
+                    widget = loadErr.goals || !d?.goals
+                      ? <AnalyticsCard modId="goals" title="Цели"><CardError /></AnalyticsCard>
+                      : <GoalsWidget goals={d.goals} milestones={d.milestones||[]} />
+                    break
+                  default:
+                    break
                 }
 
-                const widget = renderWidget()
                 if (!widget) return null
                 return <div key={modId}>{widget}</div>
               })}
