@@ -31,7 +31,7 @@ function ModuleIcon({ modId, color, size = 'md' }) {
 
 function GridSkeleton({ count = 6 }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="h-44 bg-card border border-border-2 rounded-xl animate-pulse" />
       ))}
@@ -236,7 +236,7 @@ export default function ModuleStore() {
                 перетащите, чтобы изменить порядок
               </span>
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
               {activeModules.map(modId => (
                 <div key={modId} className="min-h-[176px]">
                   <ActiveModuleCard
@@ -276,7 +276,7 @@ export default function ModuleStore() {
               >
                 {cat.label}
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 {mods.map(mod => {
                   const isActive = activeModules.includes(mod.id)
                   return (

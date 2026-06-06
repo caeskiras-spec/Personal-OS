@@ -87,6 +87,22 @@ html, body {
   height: 100%;
 }
 
+/* ── iOS auto-zoom prevention: font-size must be >= 16px on mobile inputs ── */
+@media screen and (max-width: 767px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="date"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
 ::-webkit-scrollbar            { width: 4px; }
 ::-webkit-scrollbar-track      { background: var(--scrollbar-track); }
 ::-webkit-scrollbar-thumb      { background: var(--scrollbar-thumb); border-radius: 4px; }

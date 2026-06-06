@@ -217,7 +217,7 @@ export default function OSLayout({ children, activeRoute }) {
   )
 
   return (
-    <div className="flex h-screen bg-bg text-text overflow-hidden">
+    <div className="flex h-[100dvh] bg-bg text-text overflow-hidden" style={{ WebkitOverflowScrolling: 'touch' }}>
 
       {/* ── Desktop sidebar: always visible on md+ ─────────────── */}
       <aside className="hidden md:flex w-56 flex-col border-r border-border bg-surface/50 shrink-0">
@@ -260,7 +260,7 @@ export default function OSLayout({ children, activeRoute }) {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
           {children}
         </main>
       </div>

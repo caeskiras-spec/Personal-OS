@@ -34,9 +34,10 @@ function getViewingFromValue(value) {
 }
 
 export default function DatePicker({ value, onChange, placeholder = 'Дата', compact = false, noOverdue = false }) {
-  const [open, setOpen]       = useState(false)
-  const [viewing, setViewing] = useState(() => getViewingFromValue(value))
-  const containerRef          = useRef(null)
+  const [open, setOpen]         = useState(false)
+  const [alignRight, setAlignRight] = useState(false)
+  const [viewing, setViewing]   = useState(() => getViewingFromValue(value))
+  const containerRef            = useRef(null)
 
   // Sync calendar view when value changes externally
   useEffect(() => {
@@ -87,7 +88,13 @@ export default function DatePicker({ value, onChange, placeholder = 'Дата', 
     <div className="relative" ref={containerRef}>
       <button
         type="button"
-        onClick={() => setOpen(o => !o)}
+        onClick={() => {
+          if (!open && containerRef.current) {
+            const r = containerRef.current.getBoundingClientRect()
+            setAlignRight(r.left + 240 > window.innerWidth - 8)
+          }
+          setOpen(o => !o)
+        }}
         className={`flex items-center gap-1.5 rounded-lg border transition-colors ${
           compact ? 'px-2 py-1 text-xs' : 'px-2.5 py-1.5 text-xs'
         } ${
@@ -109,7 +116,7 @@ export default function DatePicker({ value, onChange, placeholder = 'Дата', 
       </button>
 
       {open && (
-        <div className="absolute z-50 top-full mt-1 left-0 w-60 bg-surface border border-border rounded-xl shadow-2xl p-3 animate-slide-up">
+        <div className={`absolute z-50 top-full mt-1 w-60 bg-surface border border-border rounded-xl shadow-2xl p-3 animate-slide-up ${alignRight ? 'right-0' : 'left-0'}`}>
 
           {/* Quick buttons */}
           <div className="flex gap-1.5 mb-3">

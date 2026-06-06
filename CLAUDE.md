@@ -100,6 +100,13 @@
 - Node: >=20 (зафиксировано в .nvmrc и engines в package.json).
 - supabaseAdmin инициализировать лениво, чтобы билд не падал без env.
 
+## Мобильные соглашения (< md = < 768px)
+- Сетка модулей (/modules): `grid-cols-2` на мобиле (не `grid-cols-1`). Десктоп: lg:3, xl:4.
+- Скролл-контейнер OSLayout: `h-[100dvh]` (не `100vh`) + `padding-bottom: env(safe-area-inset-bottom)` на `<main>` для safe-area (notch/home indicator). viewport meta: `viewportFit: 'cover'` в `export const viewport` в layout.js.
+- iOS-зум при фокусе на input: предотвращается через `font-size: 16px !important` на все input/textarea/select на мобиле (globals.css @media max-width:767px). НЕ использовать `maximum-scale` или `user-scalable=no`.
+- Выпадающие списки/поповеры не должны уезжать за правый край: Select.jsx — левая граница дропдауна clamped в `[8px, viewport − width − 8px]`; DatePicker.jsx — `alignRight` флаг, флипает на `right-0` если открытие слева выйдет за экран; FocusModule PomodoroHint tooltip — `max-w-[calc(100vw-2rem)]`; DayPopover — уже bottom-sheet на мобиле.
+- Горизонтальный скролл/layout shift не допускается — портальные дропдауны не добавляют ширину к странице.
+
 ## Грабли (известные)
 - После drag&drop в сайдбаре сбрасывать драг-состояние, иначе навигация виснет до ре-рендера. Порядок модулей персистить в user_modules.position.
 - Не отправлять не-uuid в *_id колонки (иначе 22P02). Если значения нет — слать null.

@@ -86,7 +86,7 @@ function PomodoroHint() {
       {open && (
         <div
           role="tooltip"
-          className="absolute left-0 top-6 z-50 w-72 bg-surface border border-border-2 rounded-xl p-3.5 shadow-xl text-xs text-text-3 leading-relaxed animate-fade-in"
+          className="absolute left-0 top-6 z-50 w-72 max-w-[calc(100vw-2rem)] bg-surface border border-border-2 rounded-xl p-3.5 shadow-xl text-xs text-text-3 leading-relaxed animate-fade-in"
         >
           <p className="font-semibold text-text mb-1.5">Техника Помодоро</p>
           Работа фокус-интервалами (по умолчанию 25&nbsp;мин), затем короткий перерыв (5&nbsp;мин).

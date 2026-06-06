@@ -99,15 +99,17 @@ export default function Select({
     }
   }
 
-  // Dropdown positioning (portal, fixed)
+  // Dropdown positioning (portal, fixed) — clamped to viewport width
   let dropStyle = {}
   if (rect) {
-    const goUp = rect.bottom + 244 > window.innerHeight && rect.top > 244
+    const goUp  = rect.bottom + 244 > window.innerHeight && rect.top > 244
+    const dropW = Math.max(rect.width, compact ? 120 : 160)
+    const left  = Math.max(8, Math.min(rect.left, window.innerWidth - dropW - 8))
     dropStyle = {
       position: 'fixed',
       zIndex: 9999,
-      left: rect.left,
-      width: Math.max(rect.width, compact ? 120 : 160),
+      left,
+      width: dropW,
       ...(goUp
         ? { bottom: window.innerHeight - rect.top + 4, maxHeight: Math.min(rect.top - 8, 240) }
         : { top: rect.bottom + 4, maxHeight: Math.min(window.innerHeight - rect.bottom - 8, 240) }),
