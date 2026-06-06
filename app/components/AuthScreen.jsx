@@ -1,17 +1,19 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Mail, RefreshCw, CheckCircle2 } from 'lucide-react'
 import { useAuth } from '../../lib/auth'
 import { profileRepo } from '../../lib/db/profile'
 
 const ERROR_MAP = {
-  'Invalid login credentials': 'Неверный email или пароль',
-  'User already registered': 'Email уже зарегистрирован',
-  'Email not confirmed': 'Подтвердите email (проверьте почту)',
+  'Invalid login credentials':              'Неверный email или пароль',
+  'User already registered':                'Email уже зарегистрирован',
+  'Email not confirmed':                    'Подтвердите email (проверьте почту)',
   'Password should be at least 6 characters': 'Пароль — минимум 6 символов',
-  'Unable to validate email address': 'Некорректный email',
+  'Unable to validate email address':       'Некорректный email',
+  'For security purposes':                  'Слишком много попыток — подождите немного',
 }
 
 function friendlyError(msg) {
@@ -22,13 +24,17 @@ function friendlyError(msg) {
 }
 
 export default function AuthScreen() {
-  const { signIn, signUp } = useAuth()
+  const { signIn, signUp, resendConfirmation } = useAuth()
   const router = useRouter()
-  const [mode, setMode] = useState('signin')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [submitting, setSubmitting] = useState(false)
+  const [mode,        setMode]        = useState('signin')
+  const [email,       setEmail]       = useState('')
+  const [password,    setPassword]    = useState('')
+  const [error,       setError]       = useState('')
+  const [submitting,  setSubmitting]  = useState(false)
+  // 'confirming' state: waiting for email verification after signup
+  const [confirming,  setConfirming]  = useState(false)
+  const [resending,   setResending]   = useState(false)
+  const [resent,      setResent]      = useState(false)
 
   const submit = async () => {
     if (!email.trim() || password.length < 6) {
@@ -49,12 +55,12 @@ export default function AuthScreen() {
 
       const userId = data?.user?.id
       if (!userId) {
-        // Email confirmation required
-        setError('Проверьте почту для подтверждения аккаунта')
+        // Supabase requires email confirmation — show confirmation screen
+        setConfirming(true)
         return
       }
 
-      // Route based on onboarding state
+      // Signed in or immediately confirmed — route based on onboarding
       const profile = await profileRepo.get(userId)
       router.replace(profile?.onboarding_completed ? '/home' : '/onboarding')
     } finally {
@@ -62,8 +68,66 @@ export default function AuthScreen() {
     }
   }
 
+  const handleResend = async () => {
+    setResending(true)
+    setResent(false)
+    try {
+      await resendConfirmation(email.trim())
+      setResent(true)
+    } catch { /* silent */ } finally {
+      setResending(false)
+    }
+  }
+
   const handleKey = (e) => e.key === 'Enter' && submit()
 
+  // ── Awaiting email confirmation ────────────────────────────────────────────────
+  if (confirming) {
+    return (
+      <div className="fixed inset-0 bg-bg flex items-center justify-center p-6">
+        <div className="w-full max-w-sm animate-fade-in flex flex-col items-center text-center gap-6">
+
+          <div className="w-16 h-16 rounded-2xl bg-accent/15 flex items-center justify-center">
+            <Mail className="w-8 h-8 text-accent" />
+          </div>
+
+          <div>
+            <h2 className="text-lg font-bold text-text mb-2">Подтвердите email</h2>
+            <p className="text-sm text-subtle leading-relaxed">
+              Письмо для подтверждения отправлено на{' '}
+              <span className="text-text font-medium break-all">{email}</span>.
+              Проверьте почту, включая папку «Спам».
+            </p>
+          </div>
+
+          {resent && (
+            <div className="flex items-center gap-2 px-4 py-3 bg-success/10 border border-success/30 rounded-xl text-success text-sm w-full">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              Письмо отправлено повторно
+            </div>
+          )}
+
+          <button
+            onClick={handleResend}
+            disabled={resending}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border text-sm text-subtle hover:text-text hover:border-border-2 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${resending ? 'animate-spin' : ''}`} />
+            {resending ? 'Отправка...' : 'Отправить письмо повторно'}
+          </button>
+
+          <button
+            onClick={() => { setConfirming(false); setResent(false) }}
+            className="text-xs text-subtle hover:text-text transition-colors"
+          >
+            ← Назад к форме входа
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Sign in / Sign up form ─────────────────────────────────────────────────────
   return (
     <div className="fixed inset-0 bg-bg flex items-center justify-center p-6">
       <div className="w-full max-w-sm animate-fade-in">
@@ -127,29 +191,13 @@ export default function AuthScreen() {
           {submitting ? 'Подождите...' : mode === 'signup' ? 'Создать аккаунт' : 'Войти'}
         </button>
 
-        {/* Forgot password — only shown on sign-in tab */}
         {mode === 'signin' && (
           <div className="mt-4 text-center">
-            <Link
-              href="/auth/forgot"
-              className="text-xs text-subtle hover:text-text transition-colors"
-            >
+            <Link href="/auth/forgot" className="text-xs text-subtle hover:text-text transition-colors">
               Забыли пароль?
             </Link>
           </div>
         )}
-
-        {/* Future: Google OAuth
-        <div className="mt-5 flex items-center gap-3">
-          <div className="flex-1 h-px bg-border" />
-          <span className="text-subtle text-xs">или</span>
-          <div className="flex-1 h-px bg-border" />
-        </div>
-        <button onClick={() => signInWithOAuth('google', window.location.origin)}
-          className="mt-3 w-full flex items-center justify-center gap-2 bg-surface border border-border rounded-xl py-3 text-sm text-text hover:border-accent/40 transition-colors">
-          Войти через Google
-        </button>
-        */}
       </div>
     </div>
   )
