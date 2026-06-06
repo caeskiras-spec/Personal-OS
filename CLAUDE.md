@@ -82,10 +82,11 @@
 - Новый модуль = новая миграция + lib/db + lib/selectors + компонент + регистрация модуля + (опц.) слой календаря.
 
 ## Деплой / окружение
-- Push в main → Netlify собирает и публикует. Build: npm run build, publish .next, плагин @netlify/plugin-nextjs (есть netlify.toml).
-- ENV (в Netlify): NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY.
+- Деплой на Railway: Deploy from GitHub repo, ветка main, авто-деплой по push.
+- Build: `npm run build`. Start: `next start -p $PORT` — Railway передаёт порт через $PORT, порт не хардкодить.
+- ENV (в Railway): NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY.
+- Node: >=20 (зафиксировано в .nvmrc и engines в package.json).
 - supabaseAdmin инициализировать лениво, чтобы билд не падал без env.
-- Next.js держать на пропатченной версии (CVE-2025-55182 — Netlify блокирует уязвимые версии).
 
 ## Грабли (известные)
 - После drag&drop в сайдбаре сбрасывать драг-состояние, иначе навигация виснет до ре-рендера. Порядок модулей персистить в user_modules.position.

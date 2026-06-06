@@ -5,7 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start -p $PORT"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "dependencies": {
     "@next/swc-wasm-nodejs": "15.1.0",
