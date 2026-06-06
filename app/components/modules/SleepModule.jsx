@@ -460,133 +460,101 @@ export default function SleepModule() {
     </div>
   )
 
-  const isToday   = selectedDate === getTodayStr()
-  const dateLabel = isToday ? 'Сегодня' : fmtDate(selectedDate)
-
   return (
-    <div className="p-6 max-w-4xl mx-auto animate-fade-in">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto animate-fade-in">
       {toast && <Toast msg={toast} onClose={() => setToast(null)} />}
 
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-          style={{ background: MODULE_ICONS.sleep.color + '20' }}>
-          <MODULE_ICONS.sleep.Icon size={20} style={{ color: MODULE_ICONS.sleep.color }} />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-text">Сон</h1>
-          <p className="text-subtle text-sm">{todayEntry ? fmtDuration(todayEntry.durationMinutes) + ' сегодня' : dateLabel}</p>
-        </div>
-      </div>
-
-      <div className="flex flex-col md:flex-row gap-5 items-start">
-
-        {/* ── Left: calendar ── */}
-        <div className="flex flex-col gap-4 w-full md:w-auto md:shrink-0">
-          <SleepCalendar
-            datesWithEntries={datesWithEntries}
-            selectedDate={selectedDate}
-            onSelectDate={(d) => { setSelectedDate(d); setShowForm(false) }}
-          />
-
-          {/* Watch stub */}
-          <button type="button" onClick={handleWatch}
-            className="flex items-center gap-2 w-full px-3 py-2.5 bg-card border border-border-2 hover:border-border-hover rounded-xl text-subtle hover:text-text transition-all"
-          >
-            <Watch className="w-4 h-4 shrink-0" />
-            <span className="flex-1 text-left text-xs">Подключить к часам</span>
-            <span className="text-[9px] px-1.5 py-0.5 bg-warning/10 text-warning rounded font-medium shrink-0">В разработке</span>
-          </button>
-        </div>
-
-        {/* ── Right: main ── */}
-        <div className="flex-1 min-w-0 flex flex-col gap-4">
-
-          {/* Stats card */}
-          <div className="bg-card border border-border-2 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-medium text-subtle uppercase tracking-wider">{dateLabel}</span>
-              <SleepGoalWidget goalMinutes={goalMinutes} onSave={saveGoal} />
-            </div>
-            <div className="flex gap-6 items-center">
-              <SleepRing minutes={todayEntry?.durationMinutes ?? 0} goalMinutes={goalMinutes} />
-              <div className="flex-1 flex flex-col gap-3">
-                {/* Averages */}
-                <div className="flex gap-1 bg-surface border border-border rounded-lg p-0.5 w-fit">
-                  {[{v:'week',l:'Неделя'},{v:'month',l:'Месяц'}].map(({v,l}) => (
-                    <button key={v} onClick={() => setStatPeriod(v)}
-                      className={`px-3 py-1 text-xs rounded-md transition-colors ${statPeriod === v ? 'text-[#3b82f6]' : 'text-subtle hover:text-text'}`}
-                      style={statPeriod === v ? { backgroundColor: SLEEP_COLOR + '20' } : {}}
-                    >{l}</button>
-                  ))}
-                </div>
-                <div className="flex gap-4">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] text-subtle uppercase tracking-wider">Среднее</span>
-                    <span className="text-lg font-bold text-text">{avgs.avgMinutes > 0 ? fmtDuration(avgs.avgMinutes) : '—'}</span>
-                  </div>
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] text-subtle uppercase tracking-wider">Качество</span>
-                    <div className="flex items-center gap-1">
-                      {avgs.avgQuality ? (
-                        <>
-                          <span className="text-lg font-bold text-text">{round1(avgs.avgQuality)}</span>
-                          <span className="text-xs text-subtle">/5</span>
-                        </>
-                      ) : <span className="text-lg font-bold text-subtle">—</span>}
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] text-subtle uppercase tracking-wider">Записей</span>
-                    <span className="text-lg font-bold text-text">{avgs.count}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: MODULE_ICONS.sleep.color + '20' }}>
+            <MODULE_ICONS.sleep.Icon size={20} style={{ color: MODULE_ICONS.sleep.color }} />
           </div>
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-text">Сон</h1>
+            <p className="text-subtle text-sm">
+              {avgs.count > 0
+                ? `${avgs.count} записей · ср. ${fmtDuration(avgs.avgMinutes)}`
+                : 'Ведите дневник сна'}
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => setShowForm(v => !v)}
+          className="flex items-center gap-2 bg-accent hover:bg-accent-light text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors shrink-0 ml-3"
+        >
+          <Plus className="w-4 h-4" />
+          <span className="hidden sm:inline">Добавить</span>
+        </button>
+      </div>
 
-          {/* Add button / form */}
-          {showForm ? (
-            <SleepForm
-              selectedDate={selectedDate}
-              onAdd={addEntry}
-              onClose={() => setShowForm(false)}
-            />
-          ) : (
-            <button onClick={() => setShowForm(true)}
-              className="flex items-center gap-2 px-4 py-3 bg-card border border-dashed border-border-2 hover:border-[#3b82f6]/40 hover:bg-[#3b82f6]/5 rounded-xl text-sm text-subtle hover:text-text transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              Добавить запись сна
-            </button>
-          )}
-
-          {/* Entries list */}
-          {entries.length === 0 && !showForm ? (
-            <EmptyState
-              modId="sleep"
-              title="Записей о сне пока нет"
-              description="Ведите дневник сна, чтобы отслеживать режим и качество отдыха"
-              actionLabel="Добавить запись"
-              onAction={() => setShowForm(true)}
-            />
-          ) : (
-            <div className="flex flex-col gap-2">
-              {entries
-                .filter(e => e.date >= avgs.from && e.date <= avgs.to)
-                .slice(0, 30)
-                .map(entry => (
-                  <SleepCard
-                    key={entry.id}
-                    entry={entry}
-                    onRemove={removeEntry}
-                    onUpdate={updateEntry}
-                  />
-                ))}
+      {/* ── Stats bar ── */}
+      <div className="flex items-center gap-4 mb-6 flex-wrap">
+        <div className="flex bg-surface border border-border rounded-lg p-0.5">
+          {[{v:'week',l:'Неделя'},{v:'month',l:'Месяц'}].map(({v,l}) => (
+            <button key={v} onClick={() => setStatPeriod(v)}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${statPeriod === v ? 'text-[#3b82f6]' : 'text-subtle hover:text-text'}`}
+              style={statPeriod === v ? { backgroundColor: SLEEP_COLOR + '20' } : {}}
+            >{l}</button>
+          ))}
+        </div>
+        <div className="flex gap-6">
+          <div className="text-center">
+            <div className="text-xl font-bold text-text leading-tight">
+              {avgs.avgMinutes > 0 ? fmtDuration(avgs.avgMinutes) : '—'}
             </div>
-          )}
+            <div className="text-xs text-subtle">средняя длит.</div>
+          </div>
+          <div className="text-center">
+            <div className="text-xl font-bold text-text leading-tight">
+              {avgs.avgQuality ? round1(avgs.avgQuality) + '/5' : '—'}
+            </div>
+            <div className="text-xs text-subtle">качество</div>
+          </div>
+          <div className="text-center">
+            <div className="text-xl font-bold text-text leading-tight">{avgs.count}</div>
+            <div className="text-xs text-subtle">записей</div>
+          </div>
+          <SleepGoalWidget goalMinutes={goalMinutes} onSave={saveGoal} />
         </div>
       </div>
+
+      {/* ── Add form ── */}
+      {showForm && (
+        <div className="mb-4">
+          <SleepForm
+            selectedDate={getTodayStr()}
+            onAdd={addEntry}
+            onClose={() => setShowForm(false)}
+          />
+        </div>
+      )}
+
+      {/* ── Entries list ── */}
+      {entries.length === 0 && !showForm ? (
+        <EmptyState
+          modId="sleep"
+          title="Записей о сне пока нет"
+          description="Ведите дневник сна, чтобы отслеживать режим и качество отдыха"
+          actionLabel="Добавить запись"
+          onAction={() => setShowForm(true)}
+        />
+      ) : (
+        <div className="flex flex-col gap-2">
+          {entries
+            .filter(e => e.date >= avgs.from && e.date <= avgs.to)
+            .slice(0, 30)
+            .map(entry => (
+              <SleepCard
+                key={entry.id}
+                entry={entry}
+                onRemove={removeEntry}
+                onUpdate={updateEntry}
+              />
+            ))}
+        </div>
+      )}
     </div>
   )
 }
