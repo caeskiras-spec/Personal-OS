@@ -185,11 +185,11 @@ export default function ProfilePanel({ onClose }) {
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border-1 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#6c63ff]/20 flex items-center justify-center text-sm font-bold text-[#6c63ff]">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="w-9 h-9 rounded-xl bg-[#6c63ff]/20 flex items-center justify-center text-sm font-bold text-[#6c63ff] shrink-0">
               {initials}
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-text truncate leading-tight">
                 {displayName || 'Профиль'}
               </p>
