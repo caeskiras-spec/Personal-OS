@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import EmptyState from '../EmptyState'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
@@ -711,19 +712,24 @@ export default function JournalModule() {
         <div className="flex-1 overflow-y-auto px-8 py-5">
           {filtered.length === 0 ? (
             hasFilter ? (
-              <div className="text-center py-12">
-                <p className="text-subtle text-sm">Ничего не найдено</p>
-                <button onClick={clearFilters} className="text-sm text-[#6c63ff] mt-2 hover:underline">Сбросить фильтры</button>
-              </div>
+              // no-results state: filter active but nothing matches
+              <EmptyState
+                modId="journal"
+                title="Ничего не найдено"
+                description="Попробуйте изменить фильтры или поисковый запрос"
+                actionLabel="Сбросить фильтры"
+                onAction={clearFilters}
+                compact
+              />
             ) : (
-              <div className="text-center py-20">
-                <BookOpen className="w-10 h-10 text-text-9 mx-auto mb-4" />
-                <p className="text-text font-medium mb-1">Дневник пуст</p>
-                <p className="text-subtle text-sm mb-5">Начните с первой записи</p>
-                <button onClick={() => setPanel('new')}
-                  className="px-4 py-2 bg-[#6c63ff] hover:bg-[#8b85ff] text-white text-sm rounded-xl transition-colors"
-                >Написать запись</button>
-              </div>
+              // empty state: no entries at all
+              <EmptyState
+                modId="journal"
+                title="Дневник пуст"
+                description="Начните с первой записи — мыслей, событий или планов"
+                actionLabel="Написать запись"
+                onAction={() => setPanel('new')}
+              />
             )
           ) : (
             <div className="flex flex-col gap-2.5">

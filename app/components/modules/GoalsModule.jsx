@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import EmptyState from '../EmptyState'
 import { useRouter } from 'next/navigation'
 import {
   Target, Plus, X, Trash2, Edit2, Check, Archive, RotateCcw,
@@ -838,20 +839,21 @@ export default function GoalsModule() {
         {/* List */}
         <div className="flex-1 overflow-y-auto px-8 py-5">
           {visibleList.length === 0 ? (
-            <div className="text-center py-20">
-              <Target className="w-10 h-10 text-text-9 mx-auto mb-4" />
-              <p className="text-text font-medium mb-1">
-                {tab === 'active' ? 'Нет активных целей' : tab === 'completed' ? 'Нет завершённых целей' : 'Архив пуст'}
-              </p>
-              {tab === 'active' && (
-                <>
-                  <p className="text-subtle text-sm mb-5">Поставьте первую цель</p>
-                  <button onClick={() => { setCreating(true); setPanel('new') }}
-                    className="px-4 py-2 bg-[#6c63ff] hover:bg-[#8b85ff] text-white text-sm rounded-xl transition-colors"
-                  >Создать цель</button>
-                </>
-              )}
-            </div>
+            tab === 'active' ? (
+              <EmptyState
+                modId="goals"
+                title="Целей пока нет"
+                description="Поставьте первую цель и отслеживайте прогресс"
+                actionLabel="Создать цель"
+                onAction={() => { setCreating(true); setPanel('new') }}
+              />
+            ) : (
+              <EmptyState
+                modId="goals"
+                title={tab === 'completed' ? 'Нет завершённых целей' : 'Архив пуст'}
+                compact
+              />
+            )
           ) : (
             <div className="flex flex-col gap-2.5">
               {visibleList.map(goal => (

@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import EmptyState from '../EmptyState'
 import {
   Target, Play, Pause, RotateCcw, SkipForward,
   Settings, Bell, BellOff, Trash2, AlertCircle, Info,
@@ -653,10 +654,12 @@ export default function FocusModule() {
           <div>
             <p className="text-[10px] text-muted uppercase tracking-widest mb-2 px-1">История сессий</p>
             {sessions.length === 0 ? (
-              <div className="text-center py-10">
-                <Target className="w-8 h-8 text-text-9 mx-auto mb-2" />
-                <p className="text-xs text-text-7">Нет завершённых сессий</p>
-              </div>
+              <EmptyState
+                modId="focus"
+                title="Сессий пока нет"
+                description="Запустите таймер выше, чтобы начать первую сессию фокуса"
+                compact
+              />
             ) : (
               <div className="flex flex-col gap-2">
                 {sessions.map(s => (

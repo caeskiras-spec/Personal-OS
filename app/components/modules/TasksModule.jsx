@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import EmptyState from '../EmptyState'
 import {
   ChevronDown, ChevronRight, ChevronLeft, Check, X, FileText,
   AlertCircle, Plus, Repeat, List, CalendarDays,
@@ -745,22 +746,7 @@ function LoadingSkeleton() {
   )
 }
 
-function EmptyState({ onAddClick }) {
-  return (
-    <div className="flex flex-col items-center gap-4 py-16 text-center">
-      <div className="w-14 h-14 rounded-2xl bg-surface border border-border flex items-center justify-center">
-        <Check className="w-6 h-6 text-subtle" />
-      </div>
-      <div>
-        <p className="text-text font-semibold">Задач нет</p>
-        <p className="text-subtle text-sm mt-1">Создайте первую задачу выше</p>
-      </div>
-      <button onClick={onAddClick} className="flex items-center gap-1.5 text-accent text-sm hover:text-accent-light transition-colors">
-        <Plus className="w-4 h-4" /> Добавить задачу
-      </button>
-    </div>
-  )
-}
+// EmptyState replaced by shared app/components/EmptyState.jsx
 
 function Toast({ msg, onClose }) {
   return (
@@ -1486,7 +1472,15 @@ export default function TasksModule() {
         />
 
         {/* Empty state */}
-        {tasks.length === 0 && <EmptyState onAddClick={() => inputRef.current?.focus()} />}
+        {tasks.length === 0 && (
+            <EmptyState
+              modId="tasks"
+              title="Задач пока нет"
+              description="Добавьте первую задачу и начните отслеживать дела"
+              actionLabel="Добавить задачу"
+              onAction={() => inputRef.current?.focus()}
+            />
+          )}
 
         {/* Sections */}
         {tasks.length > 0 && (

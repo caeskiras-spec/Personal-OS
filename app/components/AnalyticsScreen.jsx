@@ -167,11 +167,14 @@ function xAxisProps(n = 0) {
   }
 }
 
-// Empty state fills the full chart area (same height as chart)
-function ChartEmpty({ text }) {
+// ChartEmpty — fills fixed card chart area (h-full), same minimal style as EmptyState compact
+function ChartEmpty({ text, color }) {
   return (
-    <div className="h-full flex flex-col items-center justify-center gap-1.5 opacity-60">
-      <BarChart2 className="w-5 h-5 text-text-8" />
+    <div className="h-full flex flex-col items-center justify-center gap-2">
+      <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+        style={{ background: (color || '#6c63ff') + '20' }}>
+        <BarChart2 className="w-4 h-4" style={{ color: color || '#6c63ff' }} />
+      </div>
       <p className="text-[11px] text-text-7 text-center">{text || 'Нет данных за период'}</p>
     </div>
   )
@@ -232,7 +235,7 @@ function TasksWidget({ tasks, buckets, range }) {
         color: completePct >= 70 ? '#22c55e' : completePct > 0 ? '#f59e0b' : undefined },
     ]}>
       {!hasData
-        ? <ChartEmpty text="Задач за период нет" />
+        ? <ChartEmpty text="Задач за период нет" color={mi?.color} />
         : <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} barCategoryGap="30%">
               <XAxis dataKey="label" {...xAxisProps(chartData.length)} />
@@ -254,7 +257,7 @@ function HabitsWidget({ habits, completions, buckets, range }) {
 
   if (!habits.length) return (
     <AnalyticsCard modId="habits" title="Привычки">
-      <ChartEmpty text="Нет привычек" />
+      <ChartEmpty text="Нет привычек" color={mi?.color} />
     </AnalyticsCard>
   )
 
@@ -287,7 +290,7 @@ function HabitsWidget({ habits, completions, buckets, range }) {
       { label: 'привычек', value: habits.length },
     ]}>
       {!hasData
-        ? <ChartEmpty text="Нет отметок за период" />
+        ? <ChartEmpty text="Нет отметок за период" color={mi?.color} />
         : <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData}>
               <defs>
@@ -337,7 +340,7 @@ function FocusWidget({ sessions, profile, buckets, range }) {
       ...(goalMin > 0 ? [{ label: '% цели', value: `${Math.round(totalMin / goalMin * 100)}%` }] : []),
     ]}>
       {!hasData
-        ? <ChartEmpty text="Нет сессий за период" />
+        ? <ChartEmpty text="Нет сессий за период" color={mi?.color} />
         : <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData}>
               <defs>
@@ -392,7 +395,7 @@ function NutritionWidget({ food, profile, buckets, range }) {
       ...(goal > 0 ? [{ label: 'цель', value: goal }] : []),
     ]}>
       {!hasData
-        ? <ChartEmpty text="Нет данных за период" />
+        ? <ChartEmpty text="Нет данных за период" color={mi?.color} />
         : <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData}>
               <defs>
@@ -448,7 +451,7 @@ function SleepWidget({ sleep, buckets, range }) {
       ...(avgQ ? [{ label: 'качество', value: `${avgQ}/5` }] : []),
     ]}>
       {!hasData
-        ? <ChartEmpty text="Нет данных за период" />
+        ? <ChartEmpty text="Нет данных за период" color={mi?.color} />
         : <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData}>
               <defs>
@@ -495,7 +498,7 @@ function FitnessWidget({ workouts, buckets, range }) {
       { label: 'суммарно',   value: fmtM(totalMin) },
     ]}>
       {!hasData
-        ? <ChartEmpty text="Нет тренировок за период" />
+        ? <ChartEmpty text="Нет тренировок за период" color={mi?.color} />
         : <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} barCategoryGap="30%">
               <XAxis dataKey="label" {...xAxisProps(chartData.length)} />
@@ -536,7 +539,7 @@ function FinanceWidget({ transactions, buckets, range }) {
         color: net >= 0 ? '#22c55e' : '#ef4444' },
     ]}>
       {!hasData
-        ? <ChartEmpty text="Нет транзакций за период" />
+        ? <ChartEmpty text="Нет транзакций за период" color={MODULE_ICONS['finance']?.color} />
         : <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={chartData}>
               <defs>
@@ -577,7 +580,7 @@ function GoalsWidget({ goals, milestones }) {
 
   if (!active.length) return (
     <AnalyticsCard modId="goals" title="Цели">
-      <ChartEmpty text="Нет активных целей" />
+      <ChartEmpty text="Нет активных целей" color={MODULE_ICONS['goals']?.color} />
     </AnalyticsCard>
   )
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import EmptyState from '../EmptyState'
 import { Check, X, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react'
 import { useOS } from '../../../lib/store'
 import { habitsRepo } from '../../../lib/db/habits'
@@ -79,23 +80,7 @@ function LoadingSkeleton() {
 
 // ─── empty state ──────────────────────────────────────────────────────────────
 
-function EmptyState({ onAddClick }) {
-  return (
-    <div className="flex flex-col items-center gap-4 py-14 text-center">
-      <div className="w-14 h-14 rounded-2xl bg-surface border border-border flex items-center justify-center text-2xl">◎</div>
-      <div>
-        <p className="text-text font-semibold">Привычек нет</p>
-        <p className="text-subtle text-sm mt-1">Добавьте первую привычку выше</p>
-      </div>
-      <button
-        onClick={onAddClick}
-        className="text-accent text-sm hover:text-accent-light transition-colors"
-      >
-        + Добавить привычку
-      </button>
-    </div>
-  )
-}
+// EmptyState replaced by shared app/components/EmptyState.jsx
 
 // ─── emoji picker ─────────────────────────────────────────────────────────────
 // Fixed-position popover — не участвует в flow, не сдвигает соседей,
@@ -709,7 +694,15 @@ export default function HabitsModule() {
         <div className="flex-1 min-w-0 w-full">
           <QuickAdd onAdd={addHabit} />
 
-          {habits.length === 0 && <EmptyState onAddClick={() => {}} />}
+          {habits.length === 0 && (
+            <EmptyState
+              modId="habits"
+              title="Привычек пока нет"
+              description="Заведите первую привычку и начните строить новые ритмы"
+              actionLabel="Создать привычку"
+              onAction={() => inputRef.current?.focus()}
+            />
+          )}
 
           {habits.length > 0 && (
             <div className="bg-surface border border-border rounded-xl overflow-hidden mt-5">

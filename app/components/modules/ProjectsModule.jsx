@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import EmptyState from '../EmptyState'
 import {
   FolderOpen, Plus, X, Trash2, Edit2, Check,
   ChevronRight, AlertCircle, Circle, CheckCircle2,
@@ -567,20 +568,21 @@ export default function ProjectsModule() {
         {/* List */}
         <div className="flex-1 overflow-y-auto px-8 py-5">
           {visibleList.length === 0 ? (
-            <div className="text-center py-20">
-              <FolderOpen className="w-10 h-10 text-text-9 mx-auto mb-4" />
-              <p className="text-text font-medium mb-1">
-                {tab === 'active' ? 'Нет активных проектов' : tab === 'completed' ? 'Нет завершённых проектов' : 'Архив пуст'}
-              </p>
-              {tab === 'active' && (
-                <>
-                  <p className="text-subtle text-sm mb-5">Создайте первый проект</p>
-                  <button onClick={() => setPanel('new')}
-                    className="px-4 py-2 bg-[#6c63ff] hover:bg-[#8b85ff] text-white text-sm rounded-xl transition-colors"
-                  >Создать проект</button>
-                </>
-              )}
-            </div>
+            tab === 'active' ? (
+              <EmptyState
+                modId="projects"
+                title="Проектов пока нет"
+                description="Создайте первый проект и организуйте задачи"
+                actionLabel="Создать проект"
+                onAction={() => setPanel('new')}
+              />
+            ) : (
+              <EmptyState
+                modId="projects"
+                title={tab === 'completed' ? 'Нет завершённых проектов' : 'Архив пуст'}
+                compact
+              />
+            )
           ) : (
             <div className="grid grid-cols-1 gap-2.5">
               {visibleList.map(project => (

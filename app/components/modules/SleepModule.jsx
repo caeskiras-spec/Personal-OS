@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import EmptyState from '../EmptyState'
 import {
   Plus, X, AlertCircle, ChevronLeft, ChevronRight, Star, Watch, Trash2,
 } from 'lucide-react'
@@ -560,13 +561,13 @@ export default function SleepModule() {
 
           {/* Entries list */}
           {entries.length === 0 && !showForm ? (
-            <div className="flex flex-col items-center gap-3 py-12 text-center">
-              <span className="text-4xl">🌙</span>
-              <p className="text-subtle text-sm">Нет записей о сне</p>
-              <button onClick={() => setShowForm(true)} className="text-sm transition-colors hover:opacity-80" style={{ color: SLEEP_COLOR }}>
-                + Добавить первую запись
-              </button>
-            </div>
+            <EmptyState
+              modId="sleep"
+              title="Записей о сне пока нет"
+              description="Ведите дневник сна, чтобы отслеживать режим и качество отдыха"
+              actionLabel="Добавить запись"
+              onAction={() => setShowForm(true)}
+            />
           ) : (
             <div className="flex flex-col gap-2">
               {entries

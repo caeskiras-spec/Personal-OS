@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import EmptyState from '../EmptyState'
 import {
   Plus, X, AlertCircle, Star, ChevronLeft, ChevronRight,
   Camera, Trash2, Heart, Clock,
@@ -866,16 +867,13 @@ export default function NutritionModule() {
 
               {/* Diary by meal type */}
               {dayEntries.length === 0 && !showForm ? (
-                <div className="flex flex-col items-center gap-3 py-12 text-center">
-                  <span className="text-4xl">🍽️</span>
-                  <p className="text-subtle text-sm">Нет записей за {dateLabel.toLowerCase()}</p>
-                  <button
-                    onClick={() => setShowForm(true)}
-                    className="text-[#10b981] hover:text-[#34d399] text-sm transition-colors"
-                  >
-                    + Добавить первый приём
-                  </button>
-                </div>
+                <EmptyState
+                  modId="nutrition"
+                  title={`Нет записей за ${dateLabel.toLowerCase()}`}
+                  description="Добавьте приём пищи, чтобы следить за питанием"
+                  actionLabel="Добавить приём"
+                  onAction={() => setShowForm(true)}
+                />
               ) : (
                 <div className="flex flex-col gap-3">
                   {MEAL_TYPES.map(mt => {

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Plus, X, Check, AlertCircle, Edit2, Target, Watch } from 'lucide-react'
+import EmptyState from '../EmptyState'
 import { useOS }              from '../../../lib/store'
 import { workoutsRepo }       from '../../../lib/db/workouts'
 import { workoutTypesRepo }   from '../../../lib/db/workoutTypes'
@@ -1090,19 +1091,13 @@ export default function FitnessModule({ module: mod }) {
               </button>
             </div>
           ) : workouts.length === 0 ? (
-            <div className="flex flex-col items-center gap-4 py-16 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-surface border border-border flex items-center justify-center text-3xl">⚡</div>
-              <div>
-                <p className="text-text font-semibold">Нет тренировок</p>
-                <p className="text-subtle text-sm mt-1">Добавьте первую и начните отслеживать прогресс</p>
-              </div>
-              <button
-                onClick={() => setPanel({ mode: 'add', date: getTodayStr() })}
-                className="mt-1 bg-accent hover:bg-accent-light text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-colors"
-              >
-                + Добавить тренировку
-              </button>
-            </div>
+            <EmptyState
+              modId="fitness"
+              title="Тренировок пока нет"
+              description="Запишите первую — и начните отслеживать прогресс"
+              actionLabel="Добавить тренировку"
+              onAction={() => setPanel({ mode: 'add', date: getTodayStr() })}
+            />
           ) : (
             <div className="flex flex-col gap-5">
               {grouped.map(({ date, workouts: ws }) => (

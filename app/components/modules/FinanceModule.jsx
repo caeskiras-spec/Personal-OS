@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import EmptyState from '../EmptyState'
 import {
   Plus, X, AlertCircle, ChevronLeft, ChevronRight,
   Trash2, Edit2, Upload, Check,
@@ -942,13 +943,13 @@ export default function FinanceModule() {
               )}
 
               {transactions.length === 0 && !showForm ? (
-                <div className="flex flex-col items-center gap-3 py-12 text-center">
-                  <span className="text-4xl">💸</span>
-                  <p className="text-subtle text-sm">Нет транзакций</p>
-                  <button onClick={() => setShowForm(true)} className="text-sm hover:opacity-80 transition-opacity" style={{ color: ACCENT }}>
-                    + Добавить первую транзакцию
-                  </button>
-                </div>
+                <EmptyState
+                  modId="finance"
+                  title="Транзакций пока нет"
+                  description="Добавьте первую операцию — доход или расход"
+                  actionLabel="Добавить операцию"
+                  onAction={() => setShowForm(true)}
+                />
               ) : (
                 <div className="flex flex-col gap-5">
                   {filteredGroups.map(({ date, transactions: txns }) => (
