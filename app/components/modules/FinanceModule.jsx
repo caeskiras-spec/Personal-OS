@@ -839,7 +839,7 @@ export default function FinanceModule() {
   )
 
   return (
-    <div className="p-6 max-w-5xl mx-auto animate-fade-in">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto animate-fade-in">
       {toast && <Toast msg={toast} onClose={() => setToast(null)} />}
 
       {/* Header */}
@@ -868,136 +868,99 @@ export default function FinanceModule() {
         </button>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-5 items-start">
+      {/* Stats */}
+      <PeriodStats
+        transactions={transactions}
+        period={statPeriod}
+        onPeriodChange={setStatPeriod}
+      />
 
-        {/* ── Left: calendar + import ── */}
-        <div className="flex flex-col gap-4 w-full md:w-auto md:shrink-0">
-          <FinanceCalendar
-            transactions={transactions}
-            selectedDate={selectedDate}
-            onSelectDate={d => { setSelectedDate(d); setShowForm(false) }}
-          />
+      {/* Expense breakdown */}
+      <ExpenseBreakdown
+        transactions={transactions}
+        categories={categories}
+        period={statPeriod}
+      />
 
-          {/* Statement import stub */}
-          <button
-            type="button"
-            onClick={handleImport}
-            className="flex items-center gap-2 w-full px-3 py-2.5 bg-card border border-border-2 hover:border-border-hover rounded-xl text-subtle hover:text-text transition-all"
-          >
-            <Upload className="w-4 h-4 shrink-0" />
-            <span className="flex-1 text-left text-xs">Импортировать выписку</span>
-            <span className="text-[9px] px-1.5 py-0.5 bg-warning/10 text-warning rounded font-medium shrink-0">В разработке</span>
-          </button>
-        </div>
-
-        {/* ── Right: main content ── */}
-        <div className="flex-1 min-w-0 flex flex-col gap-4">
-
-          {/* Stats */}
-          <PeriodStats
-            transactions={transactions}
-            period={statPeriod}
-            onPeriodChange={setStatPeriod}
-          />
-
-          {/* Expense breakdown */}
-          <ExpenseBreakdown
-            transactions={transactions}
-            categories={categories}
-            period={statPeriod}
-          />
-
-          {/* Tab bar */}
-          <div className="flex items-center gap-1 bg-card border border-border-2 rounded-lg p-0.5 w-fit">
-            {[
-              { v: 'transactions', l: 'Транзакции' },
-              { v: 'budgets',      l: 'Бюджеты' },
-              { v: 'categories',   l: 'Категории' },
-            ].map(({ v, l }) => (
-              <button key={v} onClick={() => setActiveTab(v)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${activeTab === v ? 'text-[#f59e0b]' : 'text-subtle hover:text-text'}`}
-                style={activeTab === v ? { backgroundColor: ACCENT + '20' } : {}}
-              >{l}</button>
-            ))}
-          </div>
-
-          {/* Add form */}
-          {activeTab === 'transactions' && showForm && (
-            <TransactionForm
-              categories={categories}
-              selectedDate={selectedDate}
-              onAdd={addTransaction}
-              onClose={() => setShowForm(false)}
-            />
-          )}
-
-          {/* Tab content */}
-          {activeTab === 'transactions' && (
-            <>
-              {!showForm && (
-                <button
-                  onClick={() => setShowForm(true)}
-                  className="flex items-center gap-2 px-4 py-3 bg-card border border-dashed border-border-2 hover:border-[#f59e0b]/40 hover:bg-[#f59e0b]/5 rounded-xl text-sm text-subtle hover:text-text transition-all"
-                >
-                  <Plus className="w-4 h-4" />
-                  Добавить транзакцию
-                </button>
-              )}
-
-              {transactions.length === 0 && !showForm ? (
-                <EmptyState
-                  modId="finance"
-                  title="Транзакций пока нет"
-                  description="Добавьте первую операцию — доход или расход"
-                  actionLabel="Добавить операцию"
-                  onAction={() => setShowForm(true)}
-                />
-              ) : (
-                <div className="flex flex-col gap-5">
-                  {filteredGroups.map(({ date, transactions: txns }) => (
-                    <div key={date}>
-                      <div className="text-xs text-subtle uppercase tracking-widest mb-2 px-1">
-                        {fmtDate(date)}
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        {txns.map(tx => (
-                          <TransactionCard
-                            key={tx.id}
-                            tx={tx}
-                            categories={categories}
-                            onRemove={removeTransaction}
-                            onUpdate={updateTransaction}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-
-          {activeTab === 'budgets' && (
-            <BudgetsPanel
-              transactions={transactions}
-              categories={categories}
-              budgets={budgets}
-              userId={userId}
-              onBudgetsChange={setBudgets}
-              showToast={showToast}
-            />
-          )}
-
-          {activeTab === 'categories' && (
-            <CategoriesPanel
-              categories={categories}
-              userId={userId}
-              onCategoriesChange={setCategories}
-              showToast={showToast}
-            />
-          )}
-        </div>
+      {/* Tab bar */}
+      <div className="flex items-center gap-1 bg-card border border-border-2 rounded-lg p-0.5 w-fit mt-2">
+        {[
+          { v: 'transactions', l: 'Транзакции' },
+          { v: 'budgets',      l: 'Бюджеты' },
+          { v: 'categories',   l: 'Категории' },
+        ].map(({ v, l }) => (
+          <button key={v} onClick={() => setActiveTab(v)}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${activeTab === v ? 'text-[#f59e0b]' : 'text-subtle hover:text-text'}`}
+            style={activeTab === v ? { backgroundColor: ACCENT + '20' } : {}}
+          >{l}</button>
+        ))}
       </div>
+
+      {/* Add form */}
+      {activeTab === 'transactions' && showForm && (
+        <TransactionForm
+          categories={categories}
+          selectedDate={getTodayStr()}
+          onAdd={addTransaction}
+          onClose={() => setShowForm(false)}
+        />
+      )}
+
+      {/* Tab content */}
+      {activeTab === 'transactions' && (
+        <>
+          {transactions.length === 0 && !showForm ? (
+            <EmptyState
+              modId="finance"
+              title="Транзакций пока нет"
+              description="Добавьте первую операцию — доход или расход"
+              actionLabel="Добавить операцию"
+              onAction={() => setShowForm(true)}
+            />
+          ) : (
+            <div className="flex flex-col gap-5">
+              {filteredGroups.map(({ date, transactions: txns }) => (
+                <div key={date}>
+                  <div className="text-xs text-subtle uppercase tracking-widest mb-2 px-1">
+                    {fmtDate(date)}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {txns.map(tx => (
+                      <TransactionCard
+                        key={tx.id}
+                        tx={tx}
+                        categories={categories}
+                        onRemove={removeTransaction}
+                        onUpdate={updateTransaction}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {activeTab === 'budgets' && (
+        <BudgetsPanel
+          transactions={transactions}
+          categories={categories}
+          budgets={budgets}
+          userId={userId}
+          onBudgetsChange={setBudgets}
+          showToast={showToast}
+        />
+      )}
+
+      {activeTab === 'categories' && (
+        <CategoriesPanel
+          categories={categories}
+          userId={userId}
+          onCategoriesChange={setCategories}
+          showToast={showToast}
+        />
+      )}
     </div>
   )
 }
