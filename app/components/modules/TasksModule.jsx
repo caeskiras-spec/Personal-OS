@@ -227,7 +227,7 @@ function SubtaskList({ subtasks, onToggle, onRemove, onAdd }) {
             </button>
           </div>
         ))}
-        <div className={`flex items-center gap-2 px-3 py-2 ${subtasks.length > 0 ? 'border-t border-border' : ''}`}>
+        <div className={`flex items-center gap-2 px-3 py-1.5 ${subtasks.length > 0 ? 'border-t border-border' : ''}`}>
           <div className="w-4 h-4 rounded border-2 border-dashed border-muted shrink-0" />
           <input
             type="text"
@@ -235,13 +235,14 @@ function SubtaskList({ subtasks, onToggle, onRemove, onAdd }) {
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleAdd()}
             placeholder="Добавить подзадачу..."
-            className="flex-1 bg-transparent text-xs text-subtle placeholder:text-muted outline-none"
+            className="flex-1 min-w-0 bg-transparent text-xs text-subtle placeholder:text-muted outline-none"
           />
           <button
             type="button"
             onClick={handleAdd}
             disabled={!input.trim()}
-            className="text-accent text-xs hover:text-accent-light disabled:text-muted disabled:cursor-default transition-colors"
+            className="w-11 h-11 flex items-center justify-center rounded-lg text-accent hover:text-accent-light hover:bg-accent/10 disabled:text-muted disabled:cursor-default disabled:hover:bg-transparent transition-colors shrink-0 text-base font-medium"
+            aria-label="Добавить подзадачу"
           >
             +
           </button>
