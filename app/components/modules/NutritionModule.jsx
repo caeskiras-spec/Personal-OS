@@ -630,6 +630,7 @@ export default function NutritionModule() {
   const [fatGoal,      setFatGoal]      = useState(0)
   const [showForm,     setShowForm]     = useState(false)
   const [showFavTab,   setShowFavTab]   = useState(false)
+  const [statPeriod,   setStatPeriod]   = useState('week')
 
   const showToast = (msg) => setToast(msg)
 
@@ -681,6 +682,35 @@ export default function NutritionModule() {
   const datesWithEntries = useMemo(() => getDatesWithEntries(entries), [entries])
   const grouped        = useMemo(() => groupByMeal(dayEntries), [dayEntries])
   const net            = dayMacros.calories - burned
+
+  // Period stats for stats bar
+  const periodFilter = useMemo(() => {
+    const today = getTodayStr()
+    const base  = new Date(today + 'T00:00:00')
+    const from  = new Date(base.getTime() - (statPeriod === 'week' ? 6 : 29) * 86400000)
+    const fromStr = `${from.getFullYear()}-${String(from.getMonth()+1).padStart(2,'0')}-${String(from.getDate()).padStart(2,'0')}`
+    return { from: fromStr, to: today }
+  }, [statPeriod])
+
+  const periodEntries   = useMemo(() => entries.filter(e => e.date >= periodFilter.from && e.date <= periodFilter.to), [entries, periodFilter])
+  const periodMacros    = useMemo(() => sumMacros(periodEntries), [periodEntries])
+  const uniqueDays      = useMemo(() => new Set(periodEntries.map(e => e.date)).size || 1, [periodEntries])
+  const avgCalories     = Math.round(periodMacros.calories / uniqueDays)
+  const avgProtein      = Math.round(periodMacros.protein  / uniqueDays)
+  const avgCarbs        = Math.round(periodMacros.carbs    / uniqueDays)
+  const avgFat          = Math.round(periodMacros.fat      / uniqueDays)
+
+  // Group period entries by date (descending), within each date by meal
+  const periodByDate    = useMemo(() => {
+    const byDate = {}
+    for (const e of periodEntries) {
+      if (!byDate[e.date]) byDate[e.date] = []
+      byDate[e.date].push(e)
+    }
+    return Object.entries(byDate)
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([date, es]) => ({ date, byMeal: groupByMeal(es) }))
+  }, [periodEntries])
 
   // ── CRUD ──────────────────────────────────────────────────────────────────────
 
@@ -763,152 +793,175 @@ export default function NutritionModule() {
     </div>
   )
 
-  const isToday    = selectedDate === getTodayStr()
-  const dateLabel  = isToday ? 'Сегодня' : fmtDate(selectedDate)
+  const NUTR_COLOR = MODULE_ICONS.nutrition.color
 
   return (
-    <div className="p-6 max-w-4xl mx-auto animate-fade-in">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto animate-fade-in">
       {toast && <Toast msg={toast} onClose={() => setToast(null)} />}
 
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-          style={{ background: MODULE_ICONS.nutrition.color + '20' }}>
-          <MODULE_ICONS.nutrition.Icon size={20} style={{ color: MODULE_ICONS.nutrition.color }} />
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: NUTR_COLOR + '20' }}>
+            <MODULE_ICONS.nutrition.Icon size={20} style={{ color: NUTR_COLOR }} />
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-text">Питание</h1>
+            <p className="text-subtle text-sm">
+              {avgCalories > 0 ? `ср. ${avgCalories} ккал/день` : 'Ведите дневник питания'}
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-text">Питание</h1>
-          <p className="text-subtle text-sm">{dayMacros.calories > 0 ? `${roundInt(dayMacros.calories)} ккал · ${dateLabel}` : dateLabel}</p>
+        <button
+          onClick={() => { setShowFavTab(false); setShowForm(v => !v) }}
+          className="flex items-center gap-2 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors shrink-0 ml-3"
+          style={{ backgroundColor: NUTR_COLOR }}
+        >
+          <Plus className="w-4 h-4" />
+          <span className="hidden sm:inline">Добавить</span>
+        </button>
+      </div>
+
+      {/* ── Stats bar ── */}
+      <div className="flex items-center gap-4 mb-6 flex-wrap">
+        <div className="flex bg-surface border border-border rounded-lg p-0.5">
+          {[{v:'week',l:'Неделя'},{v:'month',l:'Месяц'}].map(({v,l}) => (
+            <button key={v} onClick={() => setStatPeriod(v)}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${statPeriod === v ? '' : 'text-subtle hover:text-text'}`}
+              style={statPeriod === v ? { backgroundColor: NUTR_COLOR + '20', color: NUTR_COLOR } : {}}
+            >{l}</button>
+          ))}
+        </div>
+        <div className="flex gap-6 flex-wrap">
+          <div className="text-center">
+            <div className="text-xl font-bold text-text leading-tight">{avgCalories > 0 ? avgCalories : '—'}</div>
+            <div className="text-xs text-subtle">ккал/день</div>
+          </div>
+          <div className="text-center">
+            <div className="text-xl font-bold text-text leading-tight">{avgProtein > 0 ? avgProtein+'г' : '—'}</div>
+            <div className="text-xs text-subtle">белки</div>
+          </div>
+          <div className="text-center">
+            <div className="text-xl font-bold text-text leading-tight">{avgCarbs > 0 ? avgCarbs+'г' : '—'}</div>
+            <div className="text-xs text-subtle">углеводы</div>
+          </div>
+          <div className="text-center">
+            <div className="text-xl font-bold text-text leading-tight">{avgFat > 0 ? avgFat+'г' : '—'}</div>
+            <div className="text-xs text-subtle">жиры</div>
+          </div>
+          <CalorieGoalWidget goal={calorieGoal} onSave={saveCalorieGoal} />
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-5 items-start">
-
-        {/* ── Left: calendar ── */}
-        <div className="flex flex-col gap-4 w-full md:w-auto md:shrink-0">
-          <NutritionCalendar
-            datesWithEntries={datesWithEntries}
-            selectedDate={selectedDate}
-            onSelectDate={(d) => { setSelectedDate(d); setShowForm(false) }}
-          />
-          <LastMealTimer todayEntries={dayEntries} />
+      {/* ── Today's stats card ── */}
+      <div className="bg-card border border-border-2 rounded-xl p-4 mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs font-medium text-subtle uppercase tracking-wider">Сегодня</span>
         </div>
-
-        {/* ── Right: main content ── */}
-        <div className="flex-1 min-w-0 flex flex-col gap-4">
-
-          {/* Stats row */}
-          <div className="bg-card border border-border-2 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-medium text-subtle uppercase tracking-wider">{dateLabel}</span>
-              <CalorieGoalWidget goal={calorieGoal} onSave={saveCalorieGoal} />
-            </div>
-            <div className="flex gap-6 items-center">
-              <CalorieRing eaten={dayMacros.calories} goal={calorieGoal} burned={burned} />
-              <div className="flex-1 flex flex-col gap-3">
-                <MacroBars
-                  protein={dayMacros.protein} carbs={dayMacros.carbs} fat={dayMacros.fat}
-                  proteinGoal={proteinGoal} carbsGoal={carbsGoal} fatGoal={fatGoal}
-                />
-                {burned > 0 && (
-                  <div className="pt-2 border-t border-border flex items-center justify-between text-xs">
-                    <span className="text-subtle">Нетто-калории</span>
-                    <span className={`font-semibold ${net < 0 ? 'text-[#10b981]' : 'text-text'}`}>{roundInt(net)} ккал</span>
-                  </div>
-                )}
+        <div className="flex gap-6 items-center">
+          <CalorieRing eaten={dayMacros.calories} goal={calorieGoal} burned={burned} />
+          <div className="flex-1 flex flex-col gap-3">
+            <MacroBars
+              protein={dayMacros.protein} carbs={dayMacros.carbs} fat={dayMacros.fat}
+              proteinGoal={proteinGoal} carbsGoal={carbsGoal} fatGoal={fatGoal}
+            />
+            {burned > 0 && (
+              <div className="pt-2 border-t border-border flex items-center justify-between text-xs">
+                <span className="text-subtle">Нетто-калории</span>
+                <span className={`font-semibold ${net < 0 ? 'text-[#10b981]' : 'text-text'}`}>{roundInt(net)} ккал</span>
               </div>
-            </div>
-            <div className="mt-3 pt-3 border-t border-border">
-              <MacroGoalsRow
-                proteinGoal={proteinGoal} carbsGoal={carbsGoal} fatGoal={fatGoal}
-                onSaveProtein={saveProteinGoal} onSaveCarbs={saveCarbsGoal} onSaveFat={saveFatGoal}
-              />
-            </div>
+            )}
           </div>
+        </div>
+        <div className="mt-3 pt-3 border-t border-border">
+          <MacroGoalsRow
+            proteinGoal={proteinGoal} carbsGoal={carbsGoal} fatGoal={fatGoal}
+            onSaveProtein={saveProteinGoal} onSaveCarbs={saveCarbsGoal} onSaveFat={saveFatGoal}
+          />
+        </div>
+      </div>
 
-          {/* Tab bar */}
-          <div className="flex items-center gap-1 bg-card border border-border-2 rounded-lg p-0.5 w-fit">
-            <button
-              onClick={() => setShowFavTab(false)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${!showFavTab ? 'bg-[#10b981]/20 text-[#10b981]' : 'text-subtle hover:text-text'}`}
-            >
-              Дневник
-            </button>
-            <button
-              onClick={() => setShowFavTab(true)}
-              className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${showFavTab ? 'bg-[#10b981]/20 text-[#10b981]' : 'text-subtle hover:text-text'}`}
-            >
-              <Star className="w-3 h-3" />
-              Избранное
-            </button>
-          </div>
+      {/* ── Tab bar ── */}
+      <div className="flex items-center gap-1 bg-card border border-border-2 rounded-lg p-0.5 w-fit mb-4">
+        <button
+          onClick={() => setShowFavTab(false)}
+          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${!showFavTab ? '' : 'text-subtle hover:text-text'}`}
+          style={!showFavTab ? { backgroundColor: NUTR_COLOR + '20', color: NUTR_COLOR } : {}}
+        >Дневник</button>
+        <button
+          onClick={() => setShowFavTab(true)}
+          className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${showFavTab ? '' : 'text-subtle hover:text-text'}`}
+          style={showFavTab ? { backgroundColor: NUTR_COLOR + '20', color: NUTR_COLOR } : {}}
+        ><Star className="w-3 h-3" />Избранное</button>
+      </div>
 
-          {showFavTab ? (
-            <div className="bg-card border border-border-2 rounded-xl p-4">
-              <FavoritesPanel favorites={favorites} onRemove={removeFavorite} />
-            </div>
+      {/* ── Content ── */}
+      {showFavTab ? (
+        <div className="bg-card border border-border-2 rounded-xl p-4">
+          <FavoritesPanel favorites={favorites} onRemove={removeFavorite} />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {/* Add form */}
+          {showForm && (
+            <EntryForm
+              date={selectedDate}
+              favorites={favorites}
+              onAdd={addEntry}
+              onClose={() => setShowForm(false)}
+            />
+          )}
+
+          {/* Period entries grouped by date */}
+          {periodEntries.length === 0 && !showForm ? (
+            <EmptyState
+              modId="nutrition"
+              title="Нет записей о питании"
+              description="Добавьте приём пищи, чтобы следить за питанием"
+              actionLabel="Добавить приём"
+              onAction={() => setShowForm(true)}
+            />
           ) : (
-            <>
-              {/* Add button / form */}
-              {showForm ? (
-                <EntryForm
-                  date={selectedDate}
-                  favorites={favorites}
-                  onAdd={addEntry}
-                  onClose={() => setShowForm(false)}
-                />
-              ) : (
-                <button
-                  onClick={() => setShowForm(true)}
-                  className="flex items-center gap-2 px-4 py-3 bg-card border border-dashed border-border-2 hover:border-[#10b981]/40 hover:bg-[#10b981]/5 rounded-xl text-sm text-subtle hover:text-text transition-all"
-                >
-                  <Plus className="w-4 h-4" />
-                  Добавить приём пищи
-                </button>
-              )}
-
-              {/* Diary by meal type */}
-              {dayEntries.length === 0 && !showForm ? (
-                <EmptyState
-                  modId="nutrition"
-                  title={`Нет записей за ${dateLabel.toLowerCase()}`}
-                  description="Добавьте приём пищи, чтобы следить за питанием"
-                  actionLabel="Добавить приём"
-                  onAction={() => setShowForm(true)}
-                />
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {MEAL_TYPES.map(mt => {
-                    const list = grouped[mt.id] ?? []
-                    if (list.length === 0) return null
-                    const mealCals = list.reduce((s, e) => s + (e.calories ?? 0), 0)
-                    return (
-                      <div key={mt.id} className="bg-card border border-border-2 rounded-xl overflow-hidden">
-                        <div className="flex items-center justify-between px-3 py-2 border-b border-border">
-                          <span className="text-xs font-medium text-text flex items-center gap-1.5">
-                            {mt.emoji} {mt.label}
-                          </span>
-                          <span className="text-[10px]" style={{ color: '#10b981' }}>{roundInt(mealCals)} ккал</span>
+            <div className="flex flex-col gap-5">
+              {periodByDate.map(({ date, byMeal }) => (
+                <div key={date}>
+                  <div className="text-xs text-subtle uppercase tracking-widest mb-2 px-1">
+                    {fmtDate(date)}
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    {MEAL_TYPES.map(mt => {
+                      const list = byMeal[mt.id] ?? []
+                      if (list.length === 0) return null
+                      const mealCals = list.reduce((s, e) => s + (e.calories ?? 0), 0)
+                      return (
+                        <div key={mt.id} className="bg-card border border-border-2 rounded-xl overflow-hidden">
+                          <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+                            <span className="text-xs font-medium text-text flex items-center gap-1.5">
+                              {mt.emoji} {mt.label}
+                            </span>
+                            <span className="text-[10px]" style={{ color: NUTR_COLOR }}>{roundInt(mealCals)} ккал</span>
+                          </div>
+                          <div className="py-1">
+                            {list.map(entry => (
+                              <EntryCard
+                                key={entry.id}
+                                entry={entry}
+                                onRemove={removeEntry}
+                                onFavorite={addFavorite}
+                              />
+                            ))}
+                          </div>
                         </div>
-                        <div className="py-1">
-                          {list.map(entry => (
-                            <EntryCard
-                              key={entry.id}
-                              entry={entry}
-                              onRemove={removeEntry}
-                              onFavorite={addFavorite}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    )
-                  })}
+                      )
+                    })}
+                  </div>
                 </div>
-              )}
-            </>
+              ))}
+            </div>
           )}
         </div>
-      </div>
+      )}
     </div>
   )
 }
