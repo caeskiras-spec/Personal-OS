@@ -5,6 +5,19 @@ import { ChevronLeft, ChevronRight, Check, Loader2, AlertCircle, Calendar, Clock
 
 // ─── date helpers (no external lib) ──────────────────────────────────────────
 
+// Human-readable labels — must stay in sync with TIMEZONE_OPTIONS in CalendarModule.jsx
+const TIMEZONE_LABELS = {
+  'Europe/Moscow':      'Москва (UTC+3)',
+  'Europe/London':      'Лондон (UTC+0/+1)',
+  'Europe/Berlin':      'Берлин (UTC+1/+2)',
+  'America/New_York':   'Нью-Йорк (UTC-5/-4)',
+  'America/Los_Angeles':'Лос-Анджелес (UTC-8/-7)',
+  'Asia/Dubai':         'Дубай (UTC+4)',
+  'Asia/Almaty':        'Алматы (UTC+5)',
+  'Asia/Tashkent':      'Ташкент (UTC+5)',
+  'UTC':                'UTC',
+}
+
 const MONTHS_RU   = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь']
 const MONTHS_RU_G = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря']
 const WEEKDAYS_S  = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс']
@@ -429,7 +442,7 @@ export default function BookingClient({ slug, initialMeta }) {
           {/* Timezone hint */}
           {slots.length > 0 && (
             <p className="text-[11px] text-subtle mt-2 text-center">
-              Время указано в зоне: {displayTZ}
+              Время указано по: {TIMEZONE_LABELS[displayTZ] ?? displayTZ}
             </p>
           )}
         </section>
