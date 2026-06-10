@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import { ChevronLeft, ChevronRight, AlertCircle, X } from 'lucide-react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { ChevronLeft, ChevronRight, AlertCircle, X, Plus, Copy, Check, Loader2, Link2, Users, Calendar, Settings } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useOS }                from '../../../lib/store'
 import { MODULE_ICONS }         from '../../../lib/moduleIcons'
@@ -12,6 +12,9 @@ import { workoutsRepo }         from '../../../lib/db/workouts'
 import { foodEntriesRepo }      from '../../../lib/db/foodEntries'
 import { sleepRepo }            from '../../../lib/db/sleep'
 import { transactionsRepo }     from '../../../lib/db/transactions'
+import { meetingsRepo }         from '../../../lib/db/meetings'
+import { bookingLinksRepo }     from '../../../lib/db/bookingLinks'
+import { availabilityRepo }     from '../../../lib/db/availability'
 import { getTodayStr }          from '../../../lib/tasks-selectors'
 import {
   normalizeTaskEvents,
@@ -20,7 +23,9 @@ import {
   normalizeFoodEvents,
   normalizeSleepEvents,
   normalizeFinanceEvents,
+  normalizeMeetingEvents,
   buildDayMap,
+  MEETING_COLOR,
 } from '../../../lib/calendar-selectors'
 import {
   MONTHS, MONTHS_G, WEEKDAYS, WEEKDAYS_F,
@@ -34,11 +39,33 @@ const LAYERS = [
   { key: 'nutrition', label: 'Питание',    color: '#10b981' },
   { key: 'sleep',     label: 'Сон',        color: '#3b82f6' },
   { key: 'finance',   label: 'Финансы',    color: '#f59e0b' },
+  { key: 'meetings',  label: 'Встречи',    color: MEETING_COLOR },
 ]
 
-const TYPE_LABEL = { task: 'Задачи', habit: 'Привычки', workout: 'Тренировки', nutrition: 'Питание', sleep: 'Сон', finance: 'Финансы' }
-const TYPE_COLOR = { task: '#6c63ff', habit: '#8b85ff', workout: '#22c55e', nutrition: '#10b981', sleep: '#3b82f6', finance: '#f59e0b' }
-const TYPE_ORDER = ['task', 'habit', 'workout', 'nutrition', 'sleep', 'finance']
+const TYPE_LABEL = { task: 'Задачи', habit: 'Привычки', workout: 'Тренировки', nutrition: 'Питание', sleep: 'Сон', finance: 'Финансы', meeting: 'Встречи' }
+const TYPE_COLOR = { task: '#6c63ff', habit: '#8b85ff', workout: '#22c55e', nutrition: '#10b981', sleep: '#3b82f6', finance: '#f59e0b', meeting: MEETING_COLOR }
+const TYPE_ORDER = ['task', 'habit', 'workout', 'nutrition', 'sleep', 'finance', 'meeting']
+
+// ─── Weekday names for availability editor ────────────────────────────────────
+const WEEKDAY_NAMES = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс']
+const WEEKDAY_FULL  = ['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье']
+const DURATION_OPTIONS = [15,30,45,60,90,120]
+const BUFFER_OPTIONS   = [0,5,10,15,30]
+const TIMEZONE_OPTIONS = [
+  { value: 'Europe/Moscow',     label: 'Москва (UTC+3)' },
+  { value: 'Europe/London',     label: 'Лондон (UTC+0/+1)' },
+  { value: 'Europe/Berlin',     label: 'Берлин (UTC+1/+2)' },
+  { value: 'America/New_York',  label: 'Нью-Йорк (UTC-5/-4)' },
+  { value: 'America/Los_Angeles', label: 'Лос-Анджелес (UTC-8/-7)' },
+  { value: 'Asia/Dubai',        label: 'Дубай (UTC+4)' },
+  { value: 'Asia/Almaty',       label: 'Алматы (UTC+5)' },
+  { value: 'Asia/Tashkent',     label: 'Ташкент (UTC+5)' },
+  { value: 'UTC',               label: 'UTC' },
+]
+
+function generateSlug() {
+  return Math.random().toString(36).substring(2, 10)
+}
 
 // ─── date helpers ─────────────────────────────────────────────────────────────
 
@@ -445,6 +472,399 @@ function NavHeader({ view, setView, current, navigate, goToday, layers, setLayer
   )
 }
 
+// ─── MeetingsTab ──────────────────────────────────────────────────────────────
+
+function MeetingsTab({ userId, meetings, setMeetings, showToast }) {
+  const [showForm,  setShowForm]  = useState(false)
+  const [saving,    setSaving]    = useState(false)
+  const [formErr,   setFormErr]   = useState(null)
+
+  // Manual meeting form state
+  const [mName,  setMName]  = useState('')
+  const [mPhone, setMPhone] = useState('')
+  const [mTG,    setMTG]    = useState('')
+  const [mDate,  setMDate]  = useState(getTodayStr())
+  const [mTime,  setMTime]  = useState('10:00')
+  const [mDur,   setMDur]   = useState(30)
+
+  const now = new Date()
+  const upcoming = meetings.filter(m => m.status !== 'cancelled' && new Date(m.start_at) >= now)
+    .sort((a,b) => new Date(a.start_at) - new Date(b.start_at))
+  const past = meetings.filter(m => m.status !== 'cancelled' && new Date(m.start_at) < now)
+    .sort((a,b) => new Date(b.start_at) - new Date(a.start_at))
+
+  const cancelMeeting = async (id) => {
+    const prev = meetings
+    setMeetings(p => p.map(m => m.id === id ? { ...m, status: 'cancelled' } : m))
+    try { await meetingsRepo.cancel(id) }
+    catch { setMeetings(prev); showToast('Не удалось отменить встречу') }
+  }
+
+  const createMeeting = async (e) => {
+    e.preventDefault()
+    if (!mName.trim()) { setFormErr('Укажите имя'); return }
+    setSaving(true); setFormErr(null)
+    try {
+      const [h, m] = mTime.split(':').map(Number)
+      const startAt = new Date(`${mDate}T${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:00`)
+      const endAt   = new Date(startAt.getTime() + mDur * 60000)
+      const created = await meetingsRepo.create(userId, {
+        guest_name:    mName.trim(),
+        guest_phone:   mPhone.trim() || null,
+        guest_telegram: mTG.trim()  || null,
+        start_at:      startAt.toISOString(),
+        end_at:        endAt.toISOString(),
+        status:        'confirmed',
+      })
+      setMeetings(prev => [created, ...prev])
+      setShowForm(false); setMName(''); setMPhone(''); setMTG('')
+    } catch(err) {
+      setFormErr(err?.message?.includes('overlap') ? 'На это время уже есть встреча' : (err?.message ?? 'Ошибка сохранения'))
+    } finally { setSaving(false) }
+  }
+
+  const fmtMeeting = (m) => {
+    const d = new Date(m.start_at)
+    return d.toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false })
+  }
+
+  return (
+    <div className="max-w-2xl">
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-base font-semibold text-text">Встречи</h2>
+        <button
+          onClick={() => setShowForm(s => !s)}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-accent hover:bg-accent-light text-white rounded-lg transition-colors"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Создать вручную
+        </button>
+      </div>
+
+      {showForm && (
+        <form onSubmit={createMeeting} className="bg-surface border border-border rounded-xl p-4 mb-5 flex flex-col gap-3">
+          <h3 className="text-sm font-semibold text-text">Новая встреча</h3>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs text-subtle mb-1">Имя гостя *</label>
+              <input value={mName} onChange={e => setMName(e.target.value)} placeholder="Имя"
+                className="w-full bg-bg border border-border-2 rounded-lg px-3 py-2 text-sm text-text outline-none focus:border-accent transition-colors" />
+            </div>
+            <div>
+              <label className="block text-xs text-subtle mb-1">Телефон</label>
+              <input value={mPhone} onChange={e => setMPhone(e.target.value)} placeholder="+7 …"
+                className="w-full bg-bg border border-border-2 rounded-lg px-3 py-2 text-sm text-text outline-none focus:border-accent transition-colors" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs text-subtle mb-1">Telegram</label>
+            <input value={mTG} onChange={e => setMTG(e.target.value)} placeholder="@username"
+              className="w-full bg-bg border border-border-2 rounded-lg px-3 py-2 text-sm text-text outline-none focus:border-accent transition-colors" />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="block text-xs text-subtle mb-1">Дата</label>
+              <input type="date" value={mDate} onChange={e => setMDate(e.target.value)}
+                className="w-full bg-bg border border-border-2 rounded-lg px-3 py-2 text-sm text-text outline-none focus:border-accent transition-colors" />
+            </div>
+            <div>
+              <label className="block text-xs text-subtle mb-1">Время</label>
+              <input type="time" value={mTime} onChange={e => setMTime(e.target.value)}
+                className="w-full bg-bg border border-border-2 rounded-lg px-3 py-2 text-sm text-text outline-none focus:border-accent transition-colors" />
+            </div>
+            <div>
+              <label className="block text-xs text-subtle mb-1">Длительность</label>
+              <select value={mDur} onChange={e => setMDur(Number(e.target.value))}
+                className="w-full bg-bg border border-border-2 rounded-lg px-3 py-2 text-sm text-text outline-none focus:border-accent transition-colors">
+                {[15,30,45,60,90,120].map(d => <option key={d} value={d}>{d} мин</option>)}
+              </select>
+            </div>
+          </div>
+          {formErr && <p className="text-xs text-danger">{formErr}</p>}
+          <div className="flex gap-2">
+            <button type="submit" disabled={saving}
+              className="flex items-center gap-1.5 px-4 py-2 bg-accent hover:bg-accent-light disabled:opacity-40 text-white text-xs font-medium rounded-lg transition-colors">
+              {saving && <Loader2 className="w-3 h-3 animate-spin" />}
+              Создать
+            </button>
+            <button type="button" onClick={() => setShowForm(false)}
+              className="px-3 py-2 text-xs text-subtle hover:text-text transition-colors">
+              Отмена
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* Upcoming */}
+      {upcoming.length > 0 && (
+        <div className="mb-5">
+          <p className="text-xs uppercase tracking-wider text-subtle mb-2">Предстоящие</p>
+          <div className="flex flex-col gap-2">
+            {upcoming.map(m => <MeetingCard key={m.id} meeting={m} onCancel={cancelMeeting} fmtTime={fmtMeeting} />)}
+          </div>
+        </div>
+      )}
+
+      {/* Past */}
+      {past.length > 0 && (
+        <div>
+          <p className="text-xs uppercase tracking-wider text-subtle mb-2">Прошедшие</p>
+          <div className="flex flex-col gap-2 opacity-60">
+            {past.slice(0, 10).map(m => <MeetingCard key={m.id} meeting={m} onCancel={cancelMeeting} fmtTime={fmtMeeting} past />)}
+          </div>
+        </div>
+      )}
+
+      {upcoming.length === 0 && past.length === 0 && !showForm && (
+        <div className="py-12 text-center">
+          <p className="text-subtle text-sm">Встреч пока нет</p>
+          <p className="text-subtle text-xs mt-1">Настройте ссылку записи, чтобы принимать заявки</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function MeetingCard({ meeting: m, onCancel, fmtTime, past }) {
+  const [confirm, setConfirm] = useState(false)
+  return (
+    <div className="flex items-center gap-3 px-4 py-3 bg-surface border border-border rounded-xl">
+      <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: MEETING_COLOR }} />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-text truncate">{m.guest_name}</p>
+        <p className="text-xs text-subtle">{fmtTime(m)}</p>
+        {m.guest_telegram && <p className="text-[10px] text-subtle">{m.guest_telegram}</p>}
+      </div>
+      {!past && (
+        confirm ? (
+          <div className="flex items-center gap-1 text-xs">
+            <button onClick={() => onCancel(m.id)} className="text-danger font-medium px-1">Да</button>
+            <button onClick={() => setConfirm(false)} className="text-subtle px-1">Нет</button>
+          </div>
+        ) : (
+          <button onClick={() => setConfirm(true)} className="text-xs text-subtle hover:text-danger transition-colors">
+            Отменить
+          </button>
+        )
+      )}
+    </div>
+  )
+}
+
+// ─── BookingLinkTab ───────────────────────────────────────────────────────────
+
+function BookingLinkTab({ userId, showToast }) {
+  const [link,       setLink]       = useState(null)
+  const [rules,      setRules]      = useState([])   // [{ weekday, start_time, end_time, enabled }]
+  const [loading,    setLoading]    = useState(true)
+  const [saving,     setSaving]     = useState(false)
+  const [saved,      setSaved]      = useState(false)
+  const [copied,     setCopied]     = useState(false)
+
+  // Form state
+  const [title,    setTitle]    = useState('Запись на встречу')
+  const [duration, setDuration] = useState(30)
+  const [buffer,   setBuffer]   = useState(0)
+  const [tz,       setTz]       = useState('Europe/Moscow')
+  const [isActive, setIsActive] = useState(true)
+
+  // Build the default 5-day work schedule
+  function defaultRules() {
+    return WEEKDAY_NAMES.map((_, i) => ({
+      weekday:    i,
+      enabled:    i < 5, // Mon-Fri
+      start_time: '10:00',
+      end_time:   '18:00',
+    }))
+  }
+
+  useEffect(() => {
+    if (!userId) return
+    Promise.all([bookingLinksRepo.getFirst(userId)])
+      .then(async ([bl]) => {
+        if (bl) {
+          setLink(bl)
+          setTitle(bl.title)
+          setDuration(bl.duration_minutes)
+          setBuffer(bl.buffer_minutes ?? 0)
+          setTz(bl.timezone)
+          setIsActive(bl.is_active)
+          const avail = await availabilityRepo.listByLink(userId, bl.id)
+          if (avail.length > 0) {
+            // Merge DB rules with defaults
+            const merged = WEEKDAY_NAMES.map((_, i) => {
+              const db = avail.find(r => r.weekday === i)
+              return db
+                ? { weekday: i, enabled: true, start_time: db.start_time.substring(0,5), end_time: db.end_time.substring(0,5) }
+                : { weekday: i, enabled: false, start_time: '10:00', end_time: '18:00' }
+            })
+            setRules(merged)
+          } else {
+            setRules(defaultRules())
+          }
+        } else {
+          setRules(defaultRules())
+        }
+      })
+      .catch(() => showToast('Ошибка загрузки настроек'))
+      .finally(() => setLoading(false))
+  }, [userId])
+
+  const updateRule = (i, field, value) => {
+    setRules(prev => prev.map((r, idx) => idx === i ? { ...r, [field]: value } : r))
+  }
+
+  const saveLink = async () => {
+    setSaving(true); setSaved(false)
+    try {
+      const fields = { title, duration_minutes: duration, buffer_minutes: buffer, timezone: tz, is_active: isActive }
+
+      let bl = link
+      if (!bl) {
+        bl = await bookingLinksRepo.create(userId, { ...fields, slug: generateSlug() })
+        setLink(bl)
+      } else {
+        bl = await bookingLinksRepo.update(bl.id, fields)
+        setLink(bl)
+      }
+
+      const enabledRules = rules.filter(r => r.enabled).map(r => ({
+        weekday:    r.weekday,
+        start_time: r.start_time + ':00',
+        end_time:   r.end_time   + ':00',
+      }))
+      await availabilityRepo.replaceForLink(userId, bl.id, enabledRules)
+
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch(e) {
+      showToast(e?.message ?? 'Ошибка сохранения')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const publicURL = link ? `${typeof window !== 'undefined' ? window.location.origin : ''}/book/${link.slug}` : null
+
+  const copyLink = async () => {
+    if (!publicURL) return
+    try { await navigator.clipboard.writeText(publicURL); setCopied(true); setTimeout(() => setCopied(false), 2000) }
+    catch { showToast('Не удалось скопировать') }
+  }
+
+  if (loading) return (
+    <div className="flex flex-col gap-3 max-w-lg">
+      {[1,2,3].map(i => <div key={i} className="h-12 bg-surface border border-border rounded-xl animate-pulse" />)}
+    </div>
+  )
+
+  return (
+    <div className="max-w-lg">
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-base font-semibold text-text">Ссылка для записи</h2>
+        {link && (
+          <button onClick={() => setIsActive(a => !a)}
+            className={`text-xs font-medium px-2.5 py-1 rounded-lg border transition-colors ${
+              isActive ? 'border-success/40 bg-success/10 text-success' : 'border-border text-subtle'
+            }`}
+          >
+            {isActive ? 'Активна' : 'Отключена'}
+          </button>
+        )}
+      </div>
+
+      {/* Public link */}
+      {publicURL && (
+        <div className="flex items-center gap-2 mb-5 px-3 py-2.5 bg-surface border border-border rounded-xl">
+          <Link2 className="w-3.5 h-3.5 text-accent shrink-0" />
+          <span className="flex-1 text-xs text-text-6 truncate">{publicURL}</span>
+          <button onClick={copyLink}
+            className="flex items-center gap-1 text-xs text-accent hover:text-accent-light transition-colors shrink-0">
+            {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+            {copied ? 'Скопировано' : 'Копировать'}
+          </button>
+        </div>
+      )}
+
+      <div className="flex flex-col gap-4">
+        {/* Title */}
+        <div>
+          <label className="block text-xs text-subtle mb-1.5">Название ссылки</label>
+          <input value={title} onChange={e => setTitle(e.target.value)} maxLength={100}
+            placeholder="Запись на встречу"
+            className="w-full bg-surface border border-border-2 rounded-xl px-3 py-2.5 text-sm text-text outline-none focus:border-accent transition-colors" />
+        </div>
+
+        {/* Duration + Buffer */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-subtle mb-1.5">Длительность слота</label>
+            <select value={duration} onChange={e => setDuration(Number(e.target.value))}
+              className="w-full bg-surface border border-border-2 rounded-xl px-3 py-2.5 text-sm text-text outline-none focus:border-accent transition-colors">
+              {DURATION_OPTIONS.map(d => <option key={d} value={d}>{d} мин</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-subtle mb-1.5">Буфер между слотами</label>
+            <select value={buffer} onChange={e => setBuffer(Number(e.target.value))}
+              className="w-full bg-surface border border-border-2 rounded-xl px-3 py-2.5 text-sm text-text outline-none focus:border-accent transition-colors">
+              {BUFFER_OPTIONS.map(b => <option key={b} value={b}>{b === 0 ? 'Без буфера' : `${b} мин`}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {/* Timezone */}
+        <div>
+          <label className="block text-xs text-subtle mb-1.5">Часовой пояс</label>
+          <select value={tz} onChange={e => setTz(e.target.value)}
+            className="w-full bg-surface border border-border-2 rounded-xl px-3 py-2.5 text-sm text-text outline-none focus:border-accent transition-colors">
+            {TIMEZONE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+          </select>
+        </div>
+
+        {/* Weekly availability */}
+        <div>
+          <label className="block text-xs text-subtle mb-2">Доступность по дням</label>
+          <div className="flex flex-col gap-1.5">
+            {rules.map((rule, i) => (
+              <div key={i} className={`flex items-center gap-3 px-3 py-2 rounded-xl border transition-colors ${
+                rule.enabled ? 'bg-surface border-border' : 'bg-bg border-transparent opacity-50'
+              }`}>
+                {/* Day toggle */}
+                <button
+                  type="button"
+                  onClick={() => updateRule(i, 'enabled', !rule.enabled)}
+                  className={`w-8 h-5 rounded-full transition-colors shrink-0 relative ${rule.enabled ? 'bg-accent' : 'bg-muted'}`}
+                >
+                  <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${rule.enabled ? 'left-3.5' : 'left-0.5'}`} />
+                </button>
+                <span className="text-xs font-medium text-text w-5 shrink-0">{WEEKDAY_NAMES[i]}</span>
+                {rule.enabled && (
+                  <>
+                    <input type="time" value={rule.start_time} onChange={e => updateRule(i, 'start_time', e.target.value)}
+                      className="bg-bg border border-border-2 rounded-lg px-2 py-1 text-xs text-text outline-none focus:border-accent transition-colors w-24" />
+                    <span className="text-xs text-subtle">—</span>
+                    <input type="time" value={rule.end_time} onChange={e => updateRule(i, 'end_time', e.target.value)}
+                      className="bg-bg border border-border-2 rounded-lg px-2 py-1 text-xs text-text outline-none focus:border-accent transition-colors w-24" />
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <button onClick={saveLink} disabled={saving}
+          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-40"
+          style={{ backgroundColor: saved ? 'var(--color-success)' : 'var(--color-accent)' }}>
+          {saving  ? <><Loader2 className="w-4 h-4 animate-spin" /> Сохраняем…</> :
+           saved   ? <><Check className="w-4 h-4" /> Сохранено</> :
+           link ? 'Сохранить изменения' : 'Создать ссылку'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main component ────────────────────────────────────────────────────────────
 
 export default function CalendarModule() {
@@ -459,13 +879,15 @@ export default function CalendarModule() {
   const [foodEntries,   setFoodEntries]   = useState([])
   const [sleepEntries,  setSleepEntries]  = useState([])
   const [transactions,  setTransactions]  = useState([])
+  const [meetings,      setMeetings]      = useState([])
   const [loading,       setLoading]       = useState(true)
   const [toast,         setToast]         = useState(null)
 
   // ── ui state ──
+  const [tab,     setTab]     = useState('calendar') // 'calendar' | 'meetings' | 'booking'
   const [view,    setView]    = useState('month')
   const [current, setCurrent] = useState(() => new Date())
-  const [layers,  setLayers]  = useState({ tasks: true, habits: true, workouts: true, nutrition: true, sleep: true, finance: true })
+  const [layers,  setLayers]  = useState({ tasks: true, habits: true, workouts: true, nutrition: true, sleep: true, finance: true, meetings: true })
 
   const today = getTodayStr()
 
@@ -475,13 +897,14 @@ export default function CalendarModule() {
     if (!userId) return
     async function load() {
       try {
-        const [taskList, habitList, workoutList, foodList, sleepList, txList] = await Promise.all([
+        const [taskList, habitList, workoutList, foodList, sleepList, txList, meetingList] = await Promise.all([
           tasksRepo.list(userId),
           habitsRepo.list(userId),
           workoutsRepo.list(userId),
           foodEntriesRepo.listAll(userId),
           sleepRepo.list(userId),
           transactionsRepo.list(userId),
+          meetingsRepo.list(userId).catch(() => []),
         ])
         setTasks(taskList)
         setHabits(habitList)
@@ -489,6 +912,7 @@ export default function CalendarModule() {
         setFoodEntries(foodList)
         setSleepEntries(sleepList)
         setTransactions(txList)
+        setMeetings(meetingList)
 
         // Completions require habit IDs — one extra round-trip
         if (habitList.length > 0) {
@@ -524,9 +948,10 @@ export default function CalendarModule() {
       ...(layers.nutrition ? normalizeFoodEvents(foodEntries)           : []),
       ...(layers.sleep     ? normalizeSleepEvents(sleepEntries)         : []),
       ...(layers.finance   ? normalizeFinanceEvents(transactions)       : []),
+      ...(layers.meetings  ? normalizeMeetingEvents(meetings)           : []),
     ]
     return buildDayMap(events)
-  }, [tasks, habits, completions, workouts, foodEntries, sleepEntries, transactions, layers])
+  }, [tasks, habits, completions, workouts, foodEntries, sleepEntries, transactions, meetings, layers])
 
   // ── navigation ────────────────────────────────────────────────────────────────
 
@@ -585,52 +1010,96 @@ export default function CalendarModule() {
       {toast && <Toast msg={toast} onClose={() => setToast(null)} />}
 
       {/* Module header */}
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center gap-3 mb-5">
         <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
           style={{ background: MODULE_ICONS.calendar.color + '20' }}>
           <MODULE_ICONS.calendar.Icon size={20} style={{ color: MODULE_ICONS.calendar.color }} />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-text">Календарь</h1>
-          <p className="text-subtle text-sm">Задачи · Привычки · Тренировки</p>
+          <p className="text-subtle text-sm">Задачи · Привычки · Встречи</p>
         </div>
       </div>
 
-      {/* Nav header: view toggle + date nav + layer filters */}
-      <NavHeader
-        view={view}       setView={setView}
-        current={current}
-        navigate={navigate}
-        goToday={goToday}
-        layers={layers}   setLayers={setLayers}
-      />
+      {/* Tab bar */}
+      <div className="flex gap-1 mb-5 border-b border-border">
+        {[
+          { key: 'calendar', label: 'Календарь' },
+          { key: 'meetings', label: 'Встречи' },
+          { key: 'booking',  label: 'Ссылка записи' },
+        ].map(t => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              tab === t.key
+                ? 'border-accent text-accent'
+                : 'border-transparent text-subtle hover:text-text'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-      {/* Active view */}
-      {view === 'month' && (
-        <MonthView
-          current={current}
-          dayMap={dayMap}
-          today={today}
-          onDayClick={goToDay}
-          onEventClick={handleEventClick}
+      {/* Tab: Calendar */}
+      {tab === 'calendar' && (
+        <>
+          {/* Nav header: view toggle + date nav + layer filters */}
+          <NavHeader
+            view={view}       setView={setView}
+            current={current}
+            navigate={navigate}
+            goToday={goToday}
+            layers={layers}   setLayers={setLayers}
+          />
+
+          {/* Active view */}
+          {view === 'month' && (
+            <MonthView
+              current={current}
+              dayMap={dayMap}
+              today={today}
+              onDayClick={goToDay}
+              onEventClick={handleEventClick}
+            />
+          )}
+          {view === 'week' && (
+            <WeekView
+              current={current}
+              dayMap={dayMap}
+              today={today}
+              onDayClick={goToDay}
+              onEventClick={handleEventClick}
+            />
+          )}
+          {view === 'day' && (
+            <DayView
+              current={current}
+              dayMap={dayMap}
+              today={today}
+              onAddTask={addTask}
+              onEventClick={handleEventClick}
+            />
+          )}
+        </>
+      )}
+
+      {/* Tab: Meetings */}
+      {tab === 'meetings' && (
+        <MeetingsTab
+          userId={userId}
+          meetings={meetings}
+          setMeetings={setMeetings}
+          showToast={showToast}
         />
       )}
-      {view === 'week' && (
-        <WeekView
-          current={current}
-          dayMap={dayMap}
-          today={today}
-          onDayClick={goToDay}
-          onEventClick={handleEventClick}
-        />
-      )}
-      {view === 'day' && (
-        <DayView
-          current={current}
-          dayMap={dayMap}
-          today={today}
-          onAddTask={addTask}
-          onEventClick={handleEventClick}
+
+      {/* Tab: Booking link settings */}
+      {tab === 'booking' && (
+        <BookingLinkTab
+          userId={userId}
+          showToast={showToast}
         />
       )}
     </div>
