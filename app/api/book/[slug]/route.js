@@ -70,23 +70,33 @@ async function getBusyRanges(userId, dateStr) {
   return data ?? []
 }
 
-// ─── GET /api/book/[slug]?date=YYYY-MM-DD ─────────────────────────────────────
+// ─── GET /api/book/[slug] ─────────────────────────────────────────────────────
+//
+//   Without ?date  → { link: { title, duration_minutes, timezone } }
+//   With ?date=YYYY-MM-DD → { link: {...}, slots: [{startISO, endISO}] }
 
 export async function GET(request, { params }) {
   const { slug } = params
   const { searchParams } = new URL(request.url)
   const dateStr = searchParams.get('date')
 
-  if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    return err(400, 'date параметр обязателен (YYYY-MM-DD)')
-  }
-
   try {
     const link = await getActiveLink(slug)
     if (!link) return err(404, 'Ссылка записи не найдена или неактивна')
 
-    const weekday   = getWeekday(dateStr)
-    const rules     = await getRulesForDay(link.id, weekday)
+    // Without date — just return link meta (used by client for initial probe)
+    if (!dateStr) {
+      return NextResponse.json({
+        link: { title: link.title, duration_minutes: link.duration_minutes, timezone: link.timezone },
+      })
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      return err(400, 'Некорректный формат даты (YYYY-MM-DD)')
+    }
+
+    const weekday    = getWeekday(dateStr)
+    const rules      = await getRulesForDay(link.id, weekday)
     const busyRanges = await getBusyRanges(link.user_id, dateStr)
 
     const slots = generateSlots({

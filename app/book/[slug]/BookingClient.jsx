@@ -119,19 +119,22 @@ function BookingCalendar({ viewing, setViewing, selectedDate, onSelectDate, avai
 export default function BookingClient({ slug, initialMeta }) {
   const localTZ = getLocalTZ()
 
-  // Link meta (from server + potentially updated after slot fetch)
-  const [linkMeta, setLinkMeta]   = useState(initialMeta)
-  const [notFound, setNotFound]   = useState(!initialMeta || initialMeta?.is_active === false)
+  // Link meta — starts from server-provided value (may be null if server failed)
+  const [linkMeta,   setLinkMeta]   = useState(initialMeta)
+  // null = probing, true = not found / inactive, false = found OK
+  const [notFound,   setNotFound]   = useState(
+    initialMeta?.is_active === false ? true : null
+  )
 
   // Calendar state
   const today    = new Date()
-  const [viewing, setViewing]       = useState({ year: today.getFullYear(), month: today.getMonth() })
+  const [viewing, setViewing]         = useState({ year: today.getFullYear(), month: today.getMonth() })
   const [selectedDate, setSelectedDate] = useState(null)
 
   // Slots state
-  const [slots,       setSlots]       = useState([])
+  const [slots,        setSlots]        = useState([])
   const [slotsLoading, setSlotsLoading] = useState(false)
-  const [slotsError,  setSlotsError]  = useState(null)
+  const [slotsError,   setSlotsError]   = useState(null)
   const [selectedSlot, setSelectedSlot] = useState(null)
 
   // Form state
@@ -141,7 +144,31 @@ export default function BookingClient({ slug, initialMeta }) {
   const [guestTG,    setGuestTG]    = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitErr,  setSubmitErr]  = useState(null)
-  const [confirmed,  setConfirmed]  = useState(null) // { start_at, end_at, guest_name }
+  const [confirmed,  setConfirmed]  = useState(null)
+
+  // On mount: if server didn't provide metadata, probe the API to verify the link exists
+  useEffect(() => {
+    // Server already told us it's inactive → already notFound
+    if (notFound === true) return
+    // Server provided valid metadata → mark as found
+    if (initialMeta && initialMeta.is_active !== false) {
+      setNotFound(false)
+      return
+    }
+    // Server returned null (failed silently) → probe via API
+    let cancelled = false
+    fetch(`/api/book/${encodeURIComponent(slug)}`)
+      .then(async res => {
+        if (cancelled) return
+        if (res.status === 404) { setNotFound(true); return }
+        if (!res.ok) { setNotFound(true); return }
+        const json = await res.json()
+        setLinkMeta(json.link ?? null)
+        setNotFound(false)
+      })
+      .catch(() => { if (!cancelled) setNotFound(true) })
+    return () => { cancelled = true }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load slots when date selected
   const loadSlots = useCallback(async (dateStr) => {
@@ -217,8 +244,20 @@ export default function BookingClient({ slug, initialMeta }) {
     }
   }
 
+  // ── Probing (initialMeta was null, waiting for API probe) ──
+  if (notFound === null) {
+    return (
+      <BookingLayout>
+        <div className="flex items-center justify-center gap-2 py-20 text-subtle text-sm">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          Загружаем страницу записи…
+        </div>
+      </BookingLayout>
+    )
+  }
+
   // ── Not found ──
-  if (notFound) {
+  if (notFound === true) {
     return (
       <BookingLayout>
         <div className="flex flex-col items-center gap-4 py-16 text-center">

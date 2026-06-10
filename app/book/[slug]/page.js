@@ -22,15 +22,27 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function BookPage({ params }) {
+  // Optimistic pre-fetch: gives client a title + duration immediately.
+  // If this fails for any reason (missing env, network) the client will
+  // probe /api/book/[slug] on mount and resolve correctly.
   let linkMeta = null
   try {
     const { data } = await supabaseAdmin
       .from('booking_links')
-      .select('title, duration_minutes, timezone, is_active')
+      .select('title, duration_minutes, timezone')
       .eq('slug', params.slug)
+      .eq('is_active', true)   // only expose active links server-side
       .maybeSingle()
-    linkMeta = data ?? null
-  } catch { /* client will show error */ }
+    // Pass only public-safe fields — never expose user_id
+    if (data) {
+      linkMeta = {
+        title:             data.title,
+        duration_minutes:  data.duration_minutes,
+        timezone:          data.timezone,
+        is_active:         true,
+      }
+    }
+  } catch { /* client probe will handle */ }
 
   return <BookingClient slug={params.slug} initialMeta={linkMeta} />
 }
