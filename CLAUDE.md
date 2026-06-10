@@ -123,6 +123,7 @@
 - OnboardingClient gate check (profileRepo.get) должен иметь fallback timeout (2s), чтобы холодный старт не блокировал показ визарда.
 
 ## Грабли (известные)
+- Next.js 15+: `params` в route handlers (route.js) и Server Components (page.js, generateMetadata) — **Promise**, нужно `await`. Синхронный доступ `params.slug` возвращает `undefined` → запрос к Supabase с `eq('slug', undefined)` ничего не находит → 404. Паттерн: `const { slug } = await context.params` (route.js) / `const { slug } = await params` (page.js).
 - После drag&drop в сайдбаре сбрасывать драг-состояние, иначе навигация виснет до ре-рендера. Порядок модулей персистить в user_modules.position.
 - Не отправлять не-uuid в *_id колонки (иначе 22P02). Если значения нет — слать null.
 - Новые таблицы без RLS-политик = пустые ответы под анонимной сессией. Всегда добавлять политики.
