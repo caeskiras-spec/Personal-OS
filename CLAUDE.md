@@ -36,6 +36,9 @@
 - goal_milestones (goal_id→goals, title, done, position), goal_categories
 - user_profiles (calorie_goal, protein_goal, carbs_goal, fat_goal, sleep_goal_minutes, focus_goal_minutes, focus_work_minutes, focus_break_minutes, focus_long_break_minutes, focus_cycles_before_long, workout_weekly_goal, onboarding_completed, display_name, gender [male|female|other], birth_date [text YYYY-MM-DD], height_cm, weight_kg, activity_level [low|medium|high], theme [dark|light|system DEFAULT 'system']) — миграции 0017, 0019
 - user_modules (module_id text, is_active, position int — порядок модулей в сайдбаре)
+- booking_links (user_id, slug unique, title, duration_minutes, buffer_minutes, timezone, is_active) — миграция 0021
+- availability_rules (link_id→booking_links, weekday 0-6, start_time, end_time) — per-day windows, RLS через link owner; миграция 0021
+- meetings (user_id, link_id nullable, guest_name, guest_phone, guest_telegram, start_at timestamptz, end_at timestamptz, status confirmed/cancelled; exclusion constraint btree_gist no overlap) — миграция 0021
 - auth.users (Supabase Auth)
 
 ## Темизация (ВАЖНО — не хардкодить цвета!)
@@ -63,7 +66,7 @@
 - Даты хранить/трактовать в локальном времени (без UTC-сдвига). Хелпер: localStr(d) → "YYYY-MM-DD".
 - Цвет каждого модуля — единый источник в lib/modules.js (используется в сайдбаре, на Главной, в Модулях, Аналитике, цветных иконках, слоях календаря).
 - Иконки модулей — единый источник lib/moduleIcons.js (MODULE_ICONS[modId] → { Icon, color }). Использовать везде: шапки всех 11 модулей (w-10 h-10 rounded-xl, bg = color+'20'), онбординг «Выберите модули», GenericModule. Не использовать emoji-иконки или другие Icon-компоненты вместо MODULE_ICONS.
-- Глобальный Календарь: слои-источники через calendar-selectors + тогглы по модулям (Задачи/Привычки/Тренировки/Питание/Сон/Финансы). Не ломать существующие слои при добавлении новых.
+- Глобальный Календарь: слои-источники через calendar-selectors + тогглы по модулям (Задачи/Привычки/Тренировки/Питание/Сон/Финансы/Встречи). Не ломать существующие слои при добавлении новых. CalendarModule имеет 3 таба: Календарь / Встречи / Ссылка записи. Публичная страница самозаписи — /book/[slug] (без авторизации, API-роут /api/book/[slug]). Слот-генерация — lib/booking/slots.js. Repo-слой: lib/db/bookingLinks.js, lib/db/availability.js, lib/db/meetings.js. Антидублирование встреч — btree_gist exclusion constraint + server-side re-validation (409 при гонке).
 - Селекторы агрегаций — в lib/<module>-selectors.js; доступ к БД — в lib/db/<entity>.js.
 - RLS-safe reorder: individual UPDATE на каждую строку (не upsert), Promise.all.
 - Toast: fixed top-4 right-4 z-50, AlertCircle, auto-dismiss 3s.
@@ -90,7 +93,7 @@
 - Миграция 0020 (supabase/migrations/0020_onboarding_backfill.sql): ADD COLUMN IF NOT EXISTS onboarding_completed + UPDATE SET onboarding_completed=true для всех существующих пользователей (бэкфилл).
 
 ## Миграции
-- Последовательные пронумерованные файлы (на данный момент до 0020). Идемпотентность: IF NOT EXISTS / ADD COLUMN IF NOT EXISTS / DROP POLICY IF EXISTS.
+- Последовательные пронумерованные файлы (на данный момент до 0021). Идемпотентность: IF NOT EXISTS / ADD COLUMN IF NOT EXISTS / DROP POLICY IF EXISTS.
 - Новый модуль = новая миграция + lib/db + lib/selectors + компонент + регистрация модуля + (опц.) слой календаря.
 
 ## Деплой / окружение
