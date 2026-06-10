@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { ChevronLeft, ChevronRight, AlertCircle, X, Plus, Copy, Check, Loader2, Link2, Users, Calendar, Settings } from 'lucide-react'
+import { ChevronLeft, ChevronRight, AlertCircle, X, Plus, Copy, Check, Loader2, Link2, Users, Calendar, Settings, Trash2 } from 'lucide-react'
+import Select from '../Select'
 import { useRouter } from 'next/navigation'
 import { useOS }                from '../../../lib/store'
 import { MODULE_ICONS }         from '../../../lib/moduleIcons'
@@ -660,6 +661,8 @@ function BookingLinkTab({ userId, showToast }) {
   const [saving,     setSaving]     = useState(false)
   const [saved,      setSaved]      = useState(false)
   const [copied,     setCopied]     = useState(false)
+  const [confirmDel, setConfirmDel] = useState(false)
+  const [deleting,   setDeleting]   = useState(false)
 
   // Form state
   const [title,    setTitle]    = useState('Запись на встречу')
@@ -752,6 +755,27 @@ function BookingLinkTab({ userId, showToast }) {
     catch { showToast('Не удалось скопировать') }
   }
 
+  const deleteLink = async () => {
+    if (!link) return
+    setDeleting(true)
+    try {
+      await bookingLinksRepo.remove(link.id)
+      // Reset to "no link" state — meetings are preserved (link_id → null via ON DELETE SET NULL)
+      setLink(null)
+      setTitle('Запись на встречу')
+      setDuration(30)
+      setBuffer(0)
+      setTz('Europe/Moscow')
+      setIsActive(true)
+      setRules(defaultRules())
+      setConfirmDel(false)
+    } catch(e) {
+      showToast(e?.message ?? 'Не удалось удалить ссылку')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   if (loading) return (
     <div className="flex flex-col gap-3 max-w-lg">
       {[1,2,3].map(i => <div key={i} className="h-12 bg-surface border border-border rounded-xl animate-pulse" />)}
@@ -760,16 +784,54 @@ function BookingLinkTab({ userId, showToast }) {
 
   return (
     <div className="max-w-lg">
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-5 gap-2 flex-wrap">
         <h2 className="text-base font-semibold text-text">Ссылка для записи</h2>
+
         {link && (
-          <button onClick={() => setIsActive(a => !a)}
-            className={`text-xs font-medium px-2.5 py-1 rounded-lg border transition-colors ${
-              isActive ? 'border-success/40 bg-success/10 text-success' : 'border-border text-subtle'
-            }`}
-          >
-            {isActive ? 'Активна' : 'Отключена'}
-          </button>
+          <div className="flex items-center gap-2 ml-auto">
+            {/* Active toggle */}
+            {!confirmDel && (
+              <button onClick={() => setIsActive(a => !a)}
+                className={`text-xs font-medium px-2.5 py-1 rounded-lg border transition-colors ${
+                  isActive ? 'border-success/40 bg-success/10 text-success' : 'border-border text-subtle'
+                }`}
+              >
+                {isActive ? 'Активна' : 'Отключена'}
+              </button>
+            )}
+
+            {/* Delete confirmation inline */}
+            {confirmDel ? (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-danger/8 border border-danger/30 rounded-lg">
+                <span className="text-xs text-subtle whitespace-nowrap">Удалить ссылку?</span>
+                <span className="text-xs text-subtle/40">·</span>
+                <span className="text-[10px] text-subtle/60">Встречи сохранятся</span>
+                <button
+                  onClick={deleteLink}
+                  disabled={deleting}
+                  className="text-xs font-semibold text-danger hover:text-danger/80 transition-colors disabled:opacity-40 ml-1"
+                >
+                  {deleting ? <Loader2 className="w-3 h-3 animate-spin inline" /> : 'Да'}
+                </button>
+                <button
+                  onClick={() => setConfirmDel(false)}
+                  disabled={deleting}
+                  className="text-xs text-subtle hover:text-text transition-colors"
+                >
+                  Нет
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmDel(true)}
+                className="flex items-center gap-1 text-xs text-subtle hover:text-danger transition-colors px-2 py-1 rounded-lg hover:bg-danger/8"
+                title="Удалить ссылку"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Удалить</span>
+              </button>
+            )}
+          </div>
         )}
       </div>
 
