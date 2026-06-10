@@ -52,6 +52,12 @@ const WEEKDAY_NAMES = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс']
 const WEEKDAY_FULL  = ['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье']
 const DURATION_OPTIONS = [15,30,45,60,90,120]
 const BUFFER_OPTIONS   = [0,5,10,15,30]
+// 30-minute steps for the whole day: 00:00 … 23:30
+const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
+  const h = String(Math.floor(i / 2)).padStart(2, '0')
+  const m = i % 2 === 0 ? '00' : '30'
+  return { value: `${h}:${m}`, label: `${h}:${m}` }
+})
 const TIMEZONE_OPTIONS = [
   { value: 'Europe/Moscow',     label: 'Москва (UTC+3)' },
   { value: 'Europe/London',     label: 'Лондон (UTC+0/+1)' },
@@ -570,8 +576,13 @@ function MeetingsTab({ userId, meetings, setMeetings, showToast }) {
             </div>
             <div>
               <label className="block text-xs text-subtle mb-1">Время</label>
-              <input type="time" value={mTime} onChange={e => setMTime(e.target.value)}
-                className="w-full bg-bg border border-border-2 rounded-lg px-3 py-2 text-sm text-text outline-none focus:border-accent transition-colors" />
+              <Select
+                value={mTime}
+                onChange={v => setMTime(v)}
+                options={TIME_OPTIONS}
+                placeholder="Время"
+                compact
+              />
             </div>
             <div>
               <label className="block text-xs text-subtle mb-1">Длительность</label>
@@ -908,11 +919,21 @@ function BookingLinkTab({ userId, showToast }) {
                 <span className="text-xs font-medium text-text w-5 shrink-0">{WEEKDAY_NAMES[i]}</span>
                 {rule.enabled && (
                   <>
-                    <input type="time" value={rule.start_time} onChange={e => updateRule(i, 'start_time', e.target.value)}
-                      className="bg-bg border border-border-2 rounded-lg px-2 py-1 text-xs text-text outline-none focus:border-accent transition-colors w-24" />
+                    <Select
+                      value={rule.start_time}
+                      onChange={v => updateRule(i, 'start_time', v)}
+                      options={TIME_OPTIONS.filter(o => !rule.end_time || o.value < rule.end_time)}
+                      placeholder="Начало"
+                      compact
+                    />
                     <span className="text-xs text-subtle">—</span>
-                    <input type="time" value={rule.end_time} onChange={e => updateRule(i, 'end_time', e.target.value)}
-                      className="bg-bg border border-border-2 rounded-lg px-2 py-1 text-xs text-text outline-none focus:border-accent transition-colors w-24" />
+                    <Select
+                      value={rule.end_time}
+                      onChange={v => updateRule(i, 'end_time', v)}
+                      options={TIME_OPTIONS.filter(o => !rule.start_time || o.value > rule.start_time)}
+                      placeholder="Конец"
+                      compact
+                    />
                   </>
                 )}
               </div>
