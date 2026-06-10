@@ -575,10 +575,12 @@ function MeetingsTab({ userId, meetings, setMeetings, showToast }) {
             </div>
             <div>
               <label className="block text-xs text-subtle mb-1">Длительность</label>
-              <select value={mDur} onChange={e => setMDur(Number(e.target.value))}
-                className="w-full bg-bg border border-border-2 rounded-lg px-3 py-2 text-sm text-text outline-none focus:border-accent transition-colors">
-                {[15,30,45,60,90,120].map(d => <option key={d} value={d}>{d} мин</option>)}
-              </select>
+              <Select
+                value={mDur}
+                onChange={v => setMDur(Number(v))}
+                options={[15,30,45,60,90,120].map(d => ({ value: d, label: `${d} мин` }))}
+                compact
+              />
             </div>
           </div>
           {formErr && <p className="text-xs text-danger">{formErr}</p>}
@@ -861,27 +863,30 @@ function BookingLinkTab({ userId, showToast }) {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs text-subtle mb-1.5">Длительность слота</label>
-            <select value={duration} onChange={e => setDuration(Number(e.target.value))}
-              className="w-full bg-surface border border-border-2 rounded-xl px-3 py-2.5 text-sm text-text outline-none focus:border-accent transition-colors">
-              {DURATION_OPTIONS.map(d => <option key={d} value={d}>{d} мин</option>)}
-            </select>
+            <Select
+              value={duration}
+              onChange={v => setDuration(Number(v))}
+              options={DURATION_OPTIONS.map(d => ({ value: d, label: `${d} мин` }))}
+            />
           </div>
           <div>
             <label className="block text-xs text-subtle mb-1.5">Буфер между слотами</label>
-            <select value={buffer} onChange={e => setBuffer(Number(e.target.value))}
-              className="w-full bg-surface border border-border-2 rounded-xl px-3 py-2.5 text-sm text-text outline-none focus:border-accent transition-colors">
-              {BUFFER_OPTIONS.map(b => <option key={b} value={b}>{b === 0 ? 'Без буфера' : `${b} мин`}</option>)}
-            </select>
+            <Select
+              value={buffer}
+              onChange={v => setBuffer(Number(v))}
+              options={BUFFER_OPTIONS.map(b => ({ value: b, label: b === 0 ? 'Без буфера' : `${b} мин` }))}
+            />
           </div>
         </div>
 
         {/* Timezone */}
         <div>
           <label className="block text-xs text-subtle mb-1.5">Часовой пояс</label>
-          <select value={tz} onChange={e => setTz(e.target.value)}
-            className="w-full bg-surface border border-border-2 rounded-xl px-3 py-2.5 text-sm text-text outline-none focus:border-accent transition-colors">
-            {TIMEZONE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-          </select>
+          <Select
+            value={tz}
+            onChange={setTz}
+            options={TIMEZONE_OPTIONS}
+          />
         </div>
 
         {/* Weekly availability */}
