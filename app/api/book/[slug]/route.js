@@ -75,8 +75,8 @@ async function getBusyRanges(userId, dateStr) {
 //   Without ?date  → { link: { title, duration_minutes, timezone } }
 //   With ?date=YYYY-MM-DD → { link: {...}, slots: [{startISO, endISO}] }
 
-export async function GET(request, { params }) {
-  const { slug } = params
+export async function GET(request, context) {
+  const { slug } = await context.params          // Next.js 15+: params is a Promise
   const { searchParams } = new URL(request.url)
   const dateStr = searchParams.get('date')
 
@@ -121,8 +121,8 @@ export async function GET(request, { params }) {
 
 // ─── POST /api/book/[slug] ────────────────────────────────────────────────────
 
-export async function POST(request, { params }) {
-  const { slug } = params
+export async function POST(request, context) {
+  const { slug } = await context.params          // Next.js 15+: params is a Promise
 
   let body
   try { body = await request.json() } catch { return err(400, 'Некорректный JSON') }

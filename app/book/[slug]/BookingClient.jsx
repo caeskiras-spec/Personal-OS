@@ -120,11 +120,12 @@ export default function BookingClient({ slug, initialMeta }) {
   const localTZ = getLocalTZ()
 
   // Link meta — starts from server-provided value (may be null if server failed)
-  const [linkMeta,   setLinkMeta]   = useState(initialMeta)
+  const [linkMeta,    setLinkMeta]    = useState(initialMeta)
   // null = probing, true = not found / inactive, false = found OK
-  const [notFound,   setNotFound]   = useState(
+  const [notFound,    setNotFound]    = useState(
     initialMeta?.is_active === false ? true : null
   )
+  const [probeError,  setProbeError]  = useState(null)  // server-error message (5xx)
 
   // Calendar state
   const today    = new Date()
@@ -146,7 +147,35 @@ export default function BookingClient({ slug, initialMeta }) {
   const [submitErr,  setSubmitErr]  = useState(null)
   const [confirmed,  setConfirmed]  = useState(null)
 
-  // On mount: if server didn't provide metadata, probe the API to verify the link exists
+  // Probe the API to verify the link exists.
+  // Runs on mount AND can be re-triggered by the retry button on server errors.
+  const probe = useCallback(() => {
+    setProbeError(null)
+    let cancelled = false
+    fetch(`/api/book/${encodeURIComponent(slug)}`)
+      .then(async res => {
+        if (cancelled) return
+        if (res.status === 404) { setNotFound(true); return }
+        if (!res.ok) {
+          // 5xx — server error, not "link not found"
+          setProbeError('Ошибка сервера — попробуйте ещё раз')
+          setNotFound(false)  // stay on probe=null screen with retry
+          return
+        }
+        const json = await res.json()
+        setLinkMeta(json.link ?? null)
+        setNotFound(false)
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setProbeError('Ошибка соединения — проверьте интернет и попробуйте снова')
+          setNotFound(false)
+        }
+      })
+    return () => { cancelled = true }
+  }, [slug])
+
+  // On mount: if server didn't provide metadata, probe the API
   useEffect(() => {
     // Server already told us it's inactive → already notFound
     if (notFound === true) return
@@ -156,18 +185,7 @@ export default function BookingClient({ slug, initialMeta }) {
       return
     }
     // Server returned null (failed silently) → probe via API
-    let cancelled = false
-    fetch(`/api/book/${encodeURIComponent(slug)}`)
-      .then(async res => {
-        if (cancelled) return
-        if (res.status === 404) { setNotFound(true); return }
-        if (!res.ok) { setNotFound(true); return }
-        const json = await res.json()
-        setLinkMeta(json.link ?? null)
-        setNotFound(false)
-      })
-      .catch(() => { if (!cancelled) setNotFound(true) })
-    return () => { cancelled = true }
+    return probe()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load slots when date selected
@@ -248,10 +266,25 @@ export default function BookingClient({ slug, initialMeta }) {
   if (notFound === null) {
     return (
       <BookingLayout>
-        <div className="flex items-center justify-center gap-2 py-20 text-subtle text-sm">
-          <Loader2 className="w-5 h-5 animate-spin" />
-          Загружаем страницу записи…
-        </div>
+        {probeError ? (
+          <div className="flex flex-col items-center gap-4 py-16 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-warning/10 flex items-center justify-center">
+              <AlertCircle className="w-6 h-6 text-warning" />
+            </div>
+            <p className="text-sm text-subtle max-w-xs">{probeError}</p>
+            <button
+              onClick={probe}
+              className="px-4 py-2 bg-accent hover:bg-accent-light text-white text-sm font-medium rounded-xl transition-colors"
+            >
+              Попробовать снова
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center gap-2 py-20 text-subtle text-sm">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            Загружаем страницу записи…
+          </div>
+        )}
       </BookingLayout>
     )
   }
