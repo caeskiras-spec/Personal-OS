@@ -112,10 +112,18 @@
 - HabitsModule QuickAdd: двухстрочный layout — первая строка emoji+input, вторая colorpicker+кнопка.
 - ModuleStore каталог: активные модули скрыты из категорий (не дублируются); пустые категории не рендерятся.
 
+## Сетевые ошибки и устойчивость (ВАЖНО)
+- lib/net.js — `authWithRetry(fn, opts)`: оборачивает supabase auth call в 2 ретрая с экспоненциальным backoff (1.2s/2.4s); ловит TypeError «Load failed»/«Failed to fetch» (WebKit/iOS Safari); нормализует в `{ data, error }` — никогда не бросает. Использовать для signUp/signIn/resend.
+- `getSession()` в auth.js + store.js ОБЯЗАН иметь `.catch()` — без него холодный старт вешает приложение навсегда (loading никогда не снимается).
+- Supabase возвращает `{ error: { message: 'Load failed' } }` при сетевом сбое (не бросает). В ERROR_MAP нужны ключи 'Load failed', 'Failed to fetch', 'NetworkError'.
+- `isNetworkError(err)` из lib/net.js — общий хелпер для определения транзиентных сетевых ошибок.
+- OnboardingClient gate check (profileRepo.get) должен иметь fallback timeout (2s), чтобы холодный старт не блокировал показ визарда.
+
 ## Грабли (известные)
 - После drag&drop в сайдбаре сбрасывать драг-состояние, иначе навигация виснет до ре-рендера. Порядок модулей персистить в user_modules.position.
 - Не отправлять не-uuid в *_id колонки (иначе 22P02). Если значения нет — слать null.
 - Новые таблицы без RLS-политик = пустые ответы под анонимной сессией. Всегда добавлять политики.
+- getSession() без .catch() = вечный спиннер при сетевом сбое. Всегда добавлять .catch(() => setSession(null)).finally(() => setLoading(false)).
 
 ## Рабочий протокол
 - Одно логическое изменение = один коммит = один push. Точечные правки, не переписывать всё.
