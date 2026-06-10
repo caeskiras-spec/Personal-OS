@@ -14,6 +14,12 @@ const ERROR_MAP = {
   'Password should be at least 6 characters': 'Пароль — минимум 6 символов',
   'Unable to validate email address':       'Некорректный email',
   'For security purposes':                  'Слишком много попыток — подождите немного',
+  // Network / cold-start errors (WebKit "Load failed", Chrome "Failed to fetch", etc.)
+  'Ошибка соединения':    'Ошибка соединения — проверьте интернет и попробуйте снова',
+  'Load failed':          'Ошибка соединения — проверьте интернет и попробуйте снова',
+  'Failed to fetch':      'Ошибка соединения — проверьте интернет и попробуйте снова',
+  'NetworkError':         'Ошибка соединения — проверьте интернет и попробуйте снова',
+  'network request':      'Ошибка соединения — проверьте интернет и попробуйте снова',
 }
 
 function friendlyError(msg) {
@@ -31,6 +37,7 @@ export default function AuthScreen() {
   const [password,    setPassword]    = useState('')
   const [error,       setError]       = useState('')
   const [submitting,  setSubmitting]  = useState(false)
+  const [connecting,  setConnecting]  = useState(false) // first-attempt "waking up" indicator
   // 'confirming' state: waiting for email verification after signup
   const [confirming,  setConfirming]  = useState(false)
   const [resending,   setResending]   = useState(false)
@@ -43,6 +50,8 @@ export default function AuthScreen() {
     }
     setError('')
     setSubmitting(true)
+    // Show "Подключаемся..." hint after 1.5s (indicates cold-start / slow server wake-up)
+    const connectingTimer = setTimeout(() => setConnecting(true), 1500)
     try {
       const { data, error: authError } = mode === 'signup'
         ? await signUp(email.trim(), password)
@@ -63,7 +72,12 @@ export default function AuthScreen() {
       // Signed in or immediately confirmed — route based on onboarding
       const profile = await profileRepo.get(userId)
       router.replace(profile?.onboarding_completed ? '/home' : '/onboarding')
+    } catch (err) {
+      // Catch any thrown TypeErrors that slip through (rare WebKit edge case)
+      setError(friendlyError(err?.message ?? ''))
     } finally {
+      clearTimeout(connectingTimer)
+      setConnecting(false)
       setSubmitting(false)
     }
   }
@@ -177,9 +191,24 @@ export default function AuthScreen() {
           />
         </div>
 
+        {connecting && !error && (
+          <div className="mb-3 px-4 py-2.5 bg-surface border border-border rounded-xl text-subtle text-sm flex items-center gap-2">
+            <span className="w-3.5 h-3.5 rounded-full border-2 border-accent border-t-transparent animate-spin shrink-0" />
+            Подключаемся к серверу…
+          </div>
+        )}
+
         {error && (
           <div className="mb-4 px-4 py-3 bg-danger/10 border border-danger/30 rounded-xl text-danger text-sm">
             {error}
+            {error.includes('соединения') && (
+              <button
+                onClick={submit}
+                className="block mt-2 text-xs text-accent hover:underline"
+              >
+                Попробовать ещё раз
+              </button>
+            )}
           </div>
         )}
 
@@ -188,7 +217,7 @@ export default function AuthScreen() {
           disabled={submitting || !email.trim() || !password}
           className="w-full bg-accent hover:bg-accent-light disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-colors text-sm"
         >
-          {submitting ? 'Подождите...' : mode === 'signup' ? 'Создать аккаунт' : 'Войти'}
+          {submitting ? 'Подождите…' : mode === 'signup' ? 'Создать аккаунт' : 'Войти'}
         </button>
 
         {mode === 'signin' && (

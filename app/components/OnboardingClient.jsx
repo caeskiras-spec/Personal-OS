@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, ChevronLeft, Loader2, Sun, Moon, Monitor } from 'lucide-react'
 import { useAuth } from '../../lib/auth'
+import { isNetworkError } from '../../lib/net'
 import { useOS }   from '../../lib/store'
 import { useTheme } from '../../lib/theme'
 import { ALL_MODULES, MODULE_CATEGORIES } from '../../lib/modules'
@@ -365,16 +366,29 @@ export default function OnboardingClient() {
   }, [authLoading, session, router])
 
   // gate: already onboarded → go to app; not → show wizard
+  // Fallback: if profileRepo.get takes too long (cold start), unblock after 2s anyway
   useEffect(() => {
     if (!session?.user?.id) return
-    profileRepo.get(session.user.id).then(p => {
-      if (p?.onboarding_completed) {
-        router.replace('/home')
-      } else {
-        if (p?.display_name || p?.username) setName(p.display_name || p.username || '')
-        setChecked(true)
-      }
-    }).catch(() => setChecked(true))
+    let cancelled = false
+    // Fallback timeout — never block the wizard more than 2s
+    const fallback = setTimeout(() => {
+      if (!cancelled) setChecked(true)
+    }, 2000)
+    profileRepo.get(session.user.id)
+      .then(p => {
+        if (cancelled) return
+        clearTimeout(fallback)
+        if (p?.onboarding_completed) {
+          router.replace('/home')
+        } else {
+          if (p?.display_name || p?.username) setName(p.display_name || p.username || '')
+          setChecked(true)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) { clearTimeout(fallback); setChecked(true) }
+      })
+    return () => { cancelled = true; clearTimeout(fallback) }
   }, [session, router])
 
   const uid = session?.user?.id
@@ -383,7 +397,15 @@ export default function OnboardingClient() {
     setSaveErr('')
     setSaving(true)
     try { await fn(); return true }
-    catch (err) { setSaveErr(err?.message ?? 'Ошибка сохранения. Попробуйте ещё раз.'); return false }
+    catch (err) {
+      const msg = err?.message ?? ''
+      setSaveErr(
+        isNetworkError(msg)
+          ? 'Ошибка соединения — проверьте интернет и попробуйте снова'
+          : msg || 'Ошибка сохранения. Попробуйте ещё раз.'
+      )
+      return false
+    }
     finally { setSaving(false) }
   }, [])
 
@@ -443,7 +465,7 @@ export default function OnboardingClient() {
           <ProgressBar step={step} />
 
           {saveErr && (
-            <div className="mb-4 px-4 py-2.5 rounded-xl bg-[#ef4444]/10 border border-[#ef4444]/30 text-[#ef4444] text-xs">
+            <div className="mb-4 px-4 py-2.5 rounded-xl bg-danger/10 border border-danger/30 text-danger text-xs">
               {saveErr}
             </div>
           )}
