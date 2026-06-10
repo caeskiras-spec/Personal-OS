@@ -854,8 +854,9 @@ function BookingLinkTab({ userId, showToast }) {
         </div>
 
         <button onClick={saveLink} disabled={saving}
-          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-40"
-          style={{ backgroundColor: saved ? 'var(--color-success)' : 'var(--color-accent)' }}>
+          className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-40 ${
+            saved ? 'bg-success hover:bg-success' : 'bg-accent hover:bg-accent-light'
+          }`}>
           {saving  ? <><Loader2 className="w-4 h-4 animate-spin" /> Сохраняем…</> :
            saved   ? <><Check className="w-4 h-4" /> Сохранено</> :
            link ? 'Сохранить изменения' : 'Создать ссылку'}
